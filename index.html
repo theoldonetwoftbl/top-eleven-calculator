@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Top Eleven Training Calculator</title>
+<meta name="description" content="Work out how many training sessions and how much condition it takes to raise a Top Eleven player's skills. Built from logged gameplay data, not guesswork.">
+<meta name="color-scheme" content="dark">
+<meta property="og:title" content="Top Eleven Training Calculator">
+<meta property="og:description" content="How many sessions and how much condition to hit your target. Built from real logged training data.">
+<meta property="og:type" content="website">
+<link rel="preload" href="fonts/SpaceGrotesk.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/JetBrainsMono.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  /* Self-hosted fonts. Nothing is requested from Google, so no visitor IP ever
+     reaches a third party and the page needs no cookie banner. */
+  @font-face{
+    font-family:'Space Grotesk';
+    src:url('fonts/SpaceGrotesk.woff2') format('woff2');
+    font-weight:400 700; font-style:normal; font-display:swap;
+  }
+  @font-face{
+    font-family:'JetBrains Mono';
+    src:url('fonts/JetBrainsMono.woff2') format('woff2');
+    font-weight:400 600; font-style:normal; font-display:swap;
+  }
+
+  :root{
+    --bg:#111417; --panel:#1a1e22; --panel2:#20252a; --line:#2c3238;
+    --text:#e9ebee; --dim:#9aa2ab;
+    --def:#3ecf6e; --atk:#e5484d; --phy:#4d8ee5; --gold:#e0ac47; --rust:#d4694a;
+    --ok:#3ecf6e;
+    --sp1:8px; --sp2:12px; --sp3:16px; --sp4:24px; --sp5:32px;
+    --tap:44px;               /* minimum touch target */
+    --radius:3px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:'Space Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    font-size:16px; line-height:1.5;
+    padding:var(--sp4) var(--sp3) 72px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1040px;margin:0 auto;}
+
+  /* Every interactive control gets a visible keyboard focus ring. */
+  :focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  button,input,select,summary{font-family:inherit;}
+  button,summary,.star{touch-action:manipulation;}
+
+  header{margin-bottom:var(--sp4);border-bottom:1px solid var(--line);padding-bottom:var(--sp3);}
+  .kicker{display:flex;flex-wrap:wrap;gap:var(--sp1) var(--sp2);align-items:baseline;
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--gold);
+        margin-bottom:var(--sp1);letter-spacing:.04em;}
+  .ver{color:var(--dim);}
+  h1{font-size:clamp(22px,5vw,28px);margin:0 0 var(--sp1);font-weight:700;line-height:1.2;}
+  header p{color:var(--dim);font-size:15px;line-height:1.55;max-width:66ch;margin:0;}
+
+  .catgrid{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);
+        border:1px solid var(--line);margin-bottom:var(--sp2);}
+  @media(min-width:860px){ .catgrid{grid-template-columns:1fr 1fr 1fr;} }
+  .cat{background:var(--panel);}
+  .cat-head{display:flex;align-items:center;gap:var(--sp1);padding:var(--sp2) var(--sp3);
+        font-weight:700;font-size:14px;letter-spacing:.02em;}
+  .cat-head .dot{width:9px;height:9px;border-radius:2px;flex:none;}
+  .cat.def .dot{background:var(--def);} .cat.atk .dot{background:var(--atk);} .cat.phy .dot{background:var(--phy);}
+  .cat.def .cat-head{color:var(--def);} .cat.atk .cat-head{color:var(--atk);} .cat.phy .cat-head{color:var(--phy);}
+
+  /* Touch targets: star and both inputs are >=44px tall so they are reliably
+     tappable on a phone. Inputs are 16px so iOS does not auto-zoom on focus. */
+  .skillrow{display:grid;grid-template-columns:var(--tap) 1fr 68px 68px;gap:6px;
+        align-items:center;padding:4px var(--sp2);border-top:1px solid var(--line);}
+  .sname{font-size:14px;min-width:0;overflow-wrap:anywhere;}
+  .star{width:var(--tap);height:var(--tap);border:none;background:none;padding:0;
+        display:flex;align-items:center;justify-content:center;cursor:pointer;
+        color:#5b646d;transition:color .15s ease;}
+  .star svg{width:20px;height:20px;display:block;}
+  .star[aria-pressed="true"]{color:var(--gold);}
+  .star:hover{color:#8a939c;}
+  .star[aria-pressed="true"]:hover{color:#f0bd58;}
+  input.val{width:100%;min-height:var(--tap);background:var(--panel2);
+        border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;
+        padding:6px 4px;text-align:center;}
+  input.val:focus{outline:none;border-color:var(--gold);}
+  input.val.target{color:var(--gold);}
+  input.val::placeholder{color:#5b646d;}
+  .col-labels{display:grid;grid-template-columns:var(--tap) 1fr 68px 68px;gap:6px;
+        padding:6px var(--sp2);font-family:'JetBrains Mono',ui-monospace,monospace;
+        font-size:10px;color:var(--dim);letter-spacing:.06em;
+        border:1px solid var(--line);border-bottom:none;background:var(--panel2);}
+  .col-labels span{text-align:center;}
+
+  .legend{font-size:13px;color:var(--dim);margin:0 0 var(--sp3);line-height:1.55;}
+  .legend b{color:var(--gold);font-weight:600;}
+
+  .setup{display:flex;flex-wrap:wrap;gap:var(--sp3);align-items:flex-end;
+        background:var(--panel);border:1px solid var(--line);
+        padding:var(--sp3);margin-bottom:var(--sp3);}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:13px;color:var(--dim);}
+  .field input{width:84px;min-height:var(--tap);background:var(--panel2);
+        border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:6px 10px;}
+  .field input:focus{outline:none;border-color:var(--gold);}
+  button.run{flex:1 1 220px;min-height:52px;background:var(--gold);color:#1a1400;
+        border:none;border-radius:var(--radius);font-weight:700;font-size:16px;
+        padding:12px 22px;cursor:pointer;transition:background .15s ease;}
+  button.run:hover{background:#eabb63;}
+  button.run:active{background:#d1a041;}
+
+  .warn{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;color:var(--rust);
+        margin:0 0 var(--sp3);line-height:1.6;display:none;
+        border-left:2px solid var(--rust);padding-left:var(--sp2);}
+  .warn.show{display:block;}
+
+  .results{background:var(--panel);border:1px solid var(--line);}
+  .results-head{padding:var(--sp2) var(--sp3);border-bottom:1px solid var(--line);
+        font-size:13px;color:var(--dim);}
+  .results-body{padding:var(--sp3);}
+  .empty{color:var(--dim);font-size:15px;padding:var(--sp1) 0;}
+
+  .headline{display:grid;grid-template-columns:1fr;gap:1px;background:var(--line);
+        margin-bottom:var(--sp3);border:1px solid var(--line);}
+  @media(min-width:560px){ .headline{grid-template-columns:1fr 1fr;} }
+  .stat{background:var(--panel2);padding:var(--sp3);}
+  .stat .num{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:30px;
+        font-weight:600;font-variant-numeric:tabular-nums;line-height:1.1;}
+  .stat.gold .num{color:var(--gold);} .stat.rust .num{color:var(--rust);}
+  .stat .lbl{font-size:12px;color:var(--dim);margin-top:var(--sp1);}
+  .stat .range{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;
+        color:var(--dim);margin-top:4px;font-variant-numeric:tabular-nums;}
+
+  .tablescroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:var(--sp3);}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  table th{text-align:left;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;
+        color:var(--gold);font-weight:500;padding:8px;border-bottom:1px solid var(--line);
+        letter-spacing:.06em;white-space:nowrap;}
+  table td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top;}
+  table td.num{font-family:'JetBrains Mono',ui-monospace,monospace;text-align:right;
+        font-variant-numeric:tabular-nums;white-space:nowrap;}
+  table.final td{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;
+        font-variant-numeric:tabular-nums;}
+  table.final td.tgt{color:var(--gold);}
+  .rot{color:var(--dim);font-size:11px;font-family:'JetBrains Mono',ui-monospace,monospace;
+        margin-top:4px;overflow-wrap:anywhere;}
+
+  .chart-box{margin:var(--sp3) 0;}
+  svg text{font-family:'JetBrains Mono',ui-monospace,monospace;fill:var(--dim);}
+
+  .note{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;color:var(--dim);
+        line-height:1.7;border-left:2px solid var(--line);padding:2px 0 2px var(--sp2);
+        margin:var(--sp3) 0 0;}
+
+  /* ---- contribute panel ---- */
+  .contrib{margin-top:var(--sp4);background:var(--panel);border:1px solid var(--line);}
+  .contrib > summary{padding:var(--sp3);cursor:pointer;font-weight:600;font-size:16px;
+        list-style:none;display:flex;align-items:center;gap:var(--sp2);min-height:var(--tap);}
+  .contrib > summary::-webkit-details-marker{display:none;}
+  .contrib > summary .chev{color:var(--gold);transition:transform .2s ease;flex:none;}
+  .contrib[open] > summary .chev{transform:rotate(90deg);}
+  .contrib-body{padding:0 var(--sp3) var(--sp3);border-top:1px solid var(--line);}
+  .contrib-body p{color:var(--dim);font-size:14px;line-height:1.6;max-width:66ch;}
+  .cgrid{display:grid;grid-template-columns:1fr;gap:var(--sp2);margin:var(--sp3) 0;}
+  @media(min-width:640px){ .cgrid{grid-template-columns:repeat(2,1fr);} }
+  .cfield{display:flex;flex-direction:column;gap:6px;}
+  .cfield label{font-size:13px;color:var(--text);font-weight:500;}
+  .cfield .hint{font-size:12px;color:var(--dim);line-height:1.45;}
+  .cfield input,.cfield select{min-height:var(--tap);background:var(--panel2);
+        border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:8px 10px;width:100%;}
+  .cfield input:focus,.cfield select:focus{outline:none;border-color:var(--gold);}
+  .skillpairs{border:1px solid var(--line);margin:var(--sp2) 0;}
+  .pairrow{display:grid;grid-template-columns:1fr 84px 84px;gap:6px;align-items:center;
+        padding:6px var(--sp2);border-bottom:1px solid var(--line);}
+  .pairrow:last-child{border-bottom:none;}
+  .pairrow .pname{font-size:14px;min-width:0;overflow-wrap:anywhere;}
+  .pairhead{display:grid;grid-template-columns:1fr 84px 84px;gap:6px;padding:6px var(--sp2);
+        background:var(--panel2);font-family:'JetBrains Mono',ui-monospace,monospace;
+        font-size:10px;color:var(--dim);letter-spacing:.06em;border-bottom:1px solid var(--line);}
+  .pairhead span{text-align:center;}
+  .pairrow input{min-height:var(--tap);background:var(--panel2);border:1px solid var(--line);
+        color:var(--text);border-radius:var(--radius);text-align:center;
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:6px 4px;width:100%;}
+  .pairrow input:focus{outline:none;border-color:var(--gold);}
+  .crow{display:flex;flex-wrap:wrap;gap:var(--sp2);align-items:center;margin-top:var(--sp3);}
+  button.send{min-height:var(--tap);background:var(--gold);color:#1a1400;border:none;
+        border-radius:var(--radius);font-weight:700;font-size:15px;padding:12px 22px;cursor:pointer;}
+  button.send:hover{background:#eabb63;}
+  button.send:disabled{opacity:.45;cursor:not-allowed;}
+  button.ghost{min-height:var(--tap);background:transparent;color:var(--text);
+        border:1px solid var(--line);border-radius:var(--radius);font-size:15px;
+        padding:12px 18px;cursor:pointer;}
+  button.ghost:hover{border-color:var(--gold);color:var(--gold);}
+  .cstatus{font-size:14px;line-height:1.5;margin-top:var(--sp2);min-height:1.5em;}
+  .cstatus.ok{color:var(--ok);} .cstatus.bad{color:var(--rust);}
+
+  footer{margin-top:var(--sp5);padding-top:var(--sp3);border-top:1px solid var(--line);
+        font-size:13px;color:var(--dim);line-height:1.7;}
+  footer strong{color:#b9c0c7;}
+  footer details{margin-top:var(--sp3);}
+  footer summary{cursor:pointer;color:var(--gold);font-weight:600;padding:var(--sp1) 0;
+        min-height:var(--tap);display:flex;align-items:center;gap:var(--sp1);}
+  footer .sec{margin-bottom:var(--sp2);}
+  footer a{color:var(--gold);}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none!important;animation:none!important;}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="ico-star" viewBox="0 0 24 24">
+    <path fill="currentColor" d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.35l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95z"/>
+  </symbol>
+  <symbol id="ico-chev" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+          stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+  </symbol>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">
+      <span>TOP ELEVEN &mdash; TRAINING CALCULATOR</span>
+      <span class="ver" id="verTag"></span>
+    </div>
+    <h1>How long will this player take?</h1>
+    <p>Set a target for the skills you want to raise, mark which ones are <b style="color:#e0ac47">highlighted</b> (white) for the player's role, and this works out how many sessions and how much condition it takes. The numbers come from real logged training data, not guesswork &mdash; and it will tell you where it is unsure.</p>
+  </header>
+
+  <div class="col-labels">
+    <span></span><span style="text-align:left">SKILL</span><span>NOW</span><span>TARGET</span>
+  </div>
+  <div class="catgrid" id="skillGrid"></div>
+
+  <p class="legend">
+    Tap the star to mark a skill <b>highlighted</b> (white in-game for that player's role). Highlighted skills gain twice as fast. Set it whether or not you're targeting that skill &mdash; it's a property of the player's position, not of what you're training.
+  </p>
+
+  <div class="setup">
+    <div class="field">
+      <label for="age">Player age</label>
+      <input type="number" id="age" value="18" min="15" max="40" inputmode="numeric">
+    </div>
+    <div class="field">
+      <label for="slots">Drill slots</label>
+      <input type="number" id="slots" value="6" min="1" max="8" inputmode="numeric">
+    </div>
+    <button class="run" id="runBtn">Find drills &amp; calculate</button>
+  </div>
+
+  <div class="warn" id="warnBox" role="status" aria-live="polite"></div>
+
+  <div class="results">
+    <div class="results-head">Result</div>
+    <div class="results-body" id="resultsArea">
+      <div class="empty">Set at least one target above, then tap calculate.</div>
+    </div>
+  </div>
+
+  <!-- ============ CONTRIBUTE ============ -->
+  <details class="contrib" id="contribPanel">
+    <summary>
+      <svg class="chev" width="16" height="16" aria-hidden="true"><use href="#ico-chev"/></svg>
+      Help make this more accurate &mdash; send a training log
+    </summary>
+    <div class="contrib-body">
+      <p>
+        The model is built from a handful of players. The more real runs it sees, the sharper it gets &mdash;
+        especially for ages over 21, where the data is thinnest. If you've trained a player for a stretch of
+        sessions on one drill, sending the numbers takes a minute and directly improves this tool for everyone.
+      </p>
+      <p>
+        <strong style="color:#b9c0c7">Nothing personal is collected.</strong> No account, no name, no club, no
+        email, no cookie. Just the numbers you type below.
+      </p>
+
+      <div class="cgrid">
+        <div class="cfield">
+          <label for="c_age">Player age during the run</label>
+          <input type="number" id="c_age" min="15" max="40" inputmode="numeric" placeholder="e.g. 24">
+          <span class="hint">Ages 22+ are the most valuable right now.</span>
+        </div>
+        <div class="cfield">
+          <label for="c_slots">Drill slots per session</label>
+          <input type="number" id="c_slots" min="1" max="8" inputmode="numeric" placeholder="e.g. 6">
+          <span class="hint">How many slots you filled with this drill.</span>
+        </div>
+        <div class="cfield">
+          <label for="c_drill">Which drill</label>
+          <select id="c_drill"></select>
+          <span class="hint">Pick the single drill you ran for the whole stretch.</span>
+        </div>
+        <div class="cfield">
+          <label for="c_sessions">Sessions trained</label>
+          <input type="number" id="c_sessions" min="1" max="2000" inputmode="numeric" placeholder="e.g. 25">
+          <span class="hint">Count of sessions between your before and after numbers.</span>
+        </div>
+      </div>
+
+      <p style="margin-bottom:6px"><strong style="color:#b9c0c7">Skill values before and after</strong>
+        &mdash; tick the star for each skill that was highlighted (white) for this player.</p>
+      <div class="pairhead">
+        <span style="text-align:left">SKILL</span><span>BEFORE</span><span>AFTER</span>
+      </div>
+      <div class="skillpairs" id="cPairs"></div>
+
+      <div class="crow">
+        <button class="send" id="cSend">Send my log</button>
+        <button class="ghost" id="cCopy">Copy instead</button>
+      </div>
+      <div class="cstatus" id="cStatus" role="status" aria-live="polite"></div>
+    </div>
+  </details>
+
+  <footer>
+    <div class="sec">
+      <strong>How it works, briefly.</strong> Each training session buys a pool of attribute points with the
+      condition it costs. Those points are shared out between the drill's skills in a fixed rotation, with
+      highlighted skills taking a double share. A drill gradually stops working as the average of its own skills
+      climbs toward 180.
+    </div>
+    <div class="sec">
+      <strong>Two things worth knowing.</strong> A drill does not earn more points for training more skills &mdash;
+      it splits the same pool further, so a 2-skill drill raises each of its skills far faster than a 5-skill one.
+      And training is flat from age 18 to 21, then drops sharply: a 26-year-old trains at roughly 30% of a
+      teenager's rate.
+    </div>
+
+    <details>
+      <summary><svg width="14" height="14" aria-hidden="true"><use href="#ico-chev"/></svg> The full model, and where it's uncertain</summary>
+      <div style="padding-top:12px">
+        <div class="sec"><strong>The formula.</strong>
+          <span class="mono">points = 0.002064 &times; age_mult &times; condition_spent &times; (180 &minus; drill_average)</span>,
+          where <span class="mono">condition_spent = slots &times; intensity</span>. Slot count, drill intensity and
+          drill size all act through condition spent &mdash; they need no separate terms. Note that condition cost per
+          session is flat at any level; what a higher drill average reduces is the points that session buys.</div>
+        <div class="sec"><strong>Age.</strong> <span class="mono">&times;1.0</span> for 18&ndash;21, then
+          <span class="mono">&times;0.785</span> per year (95% CI 0.705&ndash;0.863). Measured on identical runs at
+          ages 18, 19, 21, 23 and 26; beats a no-age model by &Delta;AIC&nbsp;=&nbsp;28.6. Not a level effect in
+          disguise &mdash; the 26-year-old had the lowest skills of any subject, where the model predicts it should
+          have been fastest.</div>
+        <div class="sec"><strong>Rotation.</strong> One pass over every skill the drill trains, then a second pass
+          over the highlighted ones. Verified exactly: on Carioca with Ladders the rotation predicted 26.00 and 13.00
+          points; the real log gave 26 and 13.</div>
+        <div class="sec"><strong>Condition.</strong> slots &times; intensity (Very Easy 0.75% &middot; Easy 1.5% &middot;
+          Medium 2.25% &middot; Hard 3% &middot; Very Hard 3.75%), flat in level and age. Rest Packs restore 15%.</div>
+        <div class="sec"><strong>Where it's weakest.</strong> Age 22 was never logged, so the model assumes the
+          plateau ends at 21. Ages past 26 are extrapolated. Two 6-slot runs came in ~15% low (not statistically
+          significant). Player-to-player variation of about &plusmn;10% is real and unexplained. The rate was fitted on
+          six drills; the rest of the catalogue is an educated extension. Teamplay drills and Goalkeeper Training
+          aren't included at all. Ranges shown are 10th&ndash;90th percentile, not guarantees.</div>
+      </div>
+    </details>
+
+    <div class="sec" style="margin-top:20px">
+      <strong>Privacy.</strong> This page sets no cookies and stores nothing on your device. Fonts are served from
+      this site, not from Google. Anonymous visit counts are recorded so I can see whether the tool is being used;
+      no personal data, no tracking across sites, and your player data is never sent anywhere unless you choose to
+      submit a log above.
+    </div>
+    <div class="sec" id="feedbackLine"></div>
+  </footer>
+</div>
+
+<script>
+/* =====================================================================
+   OWNER SETTINGS — the only part you need to edit.
+   Leave a value as an empty string "" to switch that feature off.
+   ===================================================================== */
+const CONFIG = {
+  // Umami analytics. Paste the Website ID from your Umami dashboard.
+  umamiWebsiteId : "34344410-e3ce-49fa-b159-72df5b9c5696",
+  umamiScriptUrl : "https://cloud.umami.is/script.js",
+
+  // Where contributed training logs are sent.
+  // Easiest option: make a free form at formspree.io and paste its URL here,
+  // e.g. "https://formspree.io/f/abcdwxyz"
+  submitEndpoint : "https://formspree.io/f/xljdrenq",
+
+  // Link where people can leave feedback (a Tally or Google Form works).
+  feedbackUrl    : "https://tally.so/r/9q8YMQ",
+
+  // Shown in the header and attached to every submitted log, so you always
+  // know which version of the model produced a given result.
+  modelVersion   : "model v0.4 · 2026-09-15"
+};
+/* ===================================================================== */
+
+// ---- load analytics only if configured; nothing happens otherwise ----
+(function(){
+  if(!CONFIG.umamiWebsiteId) return;
+  const s = document.createElement('script');
+  s.defer = true; s.src = CONFIG.umamiScriptUrl;
+  s.setAttribute('data-website-id', CONFIG.umamiWebsiteId);
+  document.head.appendChild(s);
+})();
+function track(name, data){
+  try{ if(window.umami) window.umami.track(name, data||{}); }catch(e){}
+}
+
+document.getElementById('verTag').textContent = CONFIG.modelVersion;
+(function(){
+  const el = document.getElementById('feedbackLine');
+  if(!CONFIG.feedbackUrl){ el.style.display='none'; return; }
+  el.innerHTML = '<strong>Found a problem, or did it get your player wrong?</strong> '
+    + '<a href="'+CONFIG.feedbackUrl+'" target="_blank" rel="noopener">Tell me here</a> '
+    + '&mdash; wrong predictions are the most useful thing you can send.';
+})();
+
+const SKILL_CATS = [
+  {key:'def', label:'DEFENSE', skills:[
+    {n:'Tackling',v:33},{n:'Marking',v:35},{n:'Positioning',v:37},{n:'Heading',v:74},{n:'Bravery',v:29}
+  ]},
+  {key:'atk', label:'ATTACK', skills:[
+    {n:'Passing',v:58},{n:'Dribbling',v:58},{n:'Crossing',v:46},{n:'Shooting',v:61},{n:'Finishing',v:63}
+  ]},
+  {key:'phy', label:'PHYSICAL', skills:[
+    {n:'Fitness',v:51},{n:'Strength',v:32},{n:'Aggression',v:53},{n:'Speed',v:66},{n:'Creativity',v:68}
+  ]}
+];
+
+const INTENSITY_COST = {'Very Easy':0.75,'Easy':1.5,'Medium':2.25,'Hard':3.0,'Very Hard':3.75};
+
+const DRILLS = [
+  {cat:'Attack', name:'Pass, Go and Shoot!', intensity:'Easy', skills:['Passing','Speed','Shooting']},
+  {cat:'Attack', name:'Shooting Technique', intensity:'Medium', skills:['Strength','Finishing','Shooting']},
+  {cat:'Attack', name:'Wing Play', intensity:'Hard', skills:['Finishing','Heading','Shooting','Crossing']},
+  {cat:'Attack', name:'Fast Counter-Attacks', intensity:'Very Hard', skills:['Finishing','Passing','Crossing','Creativity']},
+  {cat:'Attack', name:'1-on-1 Finishing', intensity:'Easy', skills:['Finishing','Tackling','Dribbling']},
+  {cat:'Attack', name:'Set-Piece Delivery', intensity:'Medium', skills:['Heading','Marking','Shooting','Crossing']},
+  {cat:'Attack', name:'Slalom Dribble', intensity:'Hard', skills:['Passing','Speed','Fitness','Dribbling']},
+  {cat:'Defense', name:'Use Your Head', intensity:'Easy', skills:['Passing','Positioning','Creativity','Heading']},
+  {cat:'Defense', name:'Stop the Attacker', intensity:'Medium', skills:['Strength','Marking','Tackling','Dribbling','Bravery']},
+  {cat:'Defense', name:'Press the Play', intensity:'Hard', skills:['Aggression','Positioning','Marking','Tackling','Bravery']},
+  {cat:'Defense', name:'Video Analysis', intensity:'Very Easy', skills:['Creativity','Positioning','Bravery']},
+  {cat:'Defense', name:'One Line of Defense', intensity:'Medium', skills:['Positioning','Marking']},
+  {cat:'Defense', name:'Defending Crosses', intensity:'Medium', skills:['Heading','Marking','Crossing','Bravery']},
+  {cat:'Possession', name:'Ball Control', intensity:'Very Easy', skills:['Creativity','Dribbling','Heading']},
+  {cat:'Possession', name:'Piggy in the Middle', intensity:'Easy', skills:['Aggression','Positioning','Passing','Tackling','Fitness']},
+  {cat:'Possession', name:'Rapid Side Switch', intensity:'Medium', skills:['Creativity','Positioning','Crossing','Passing','Speed']},
+  {cat:'Possession', name:'Contact Play', intensity:'Medium', skills:['Aggression','Strength','Marking','Dribbling','Bravery']},
+  {cat:'Possession', name:'First Touch Play', intensity:'Easy', skills:['Passing','Fitness','Dribbling']},
+  {cat:'Possession', name:'Stay in Lane', intensity:'Medium', skills:['Positioning','Speed','Fitness']},
+  {cat:'Possession', name:'Passes Before Shot', intensity:'Hard', skills:['Positioning','Finishing','Passing','Creativity']},
+  {cat:'Physical & Mental', name:'Warm-Up', intensity:'Very Easy', skills:['Aggression','Fitness','Heading']},
+  {cat:'Physical & Mental', name:'Stretch', intensity:'Easy', skills:['Speed','Fitness','Strength']},
+  {cat:'Physical & Mental', name:'Long Run', intensity:'Medium', skills:['Speed','Fitness']},
+  {cat:'Physical & Mental', name:'Carioca with Ladders', intensity:'Easy', skills:['Speed','Aggression']},
+  {cat:'Physical & Mental', name:'Shuttle Runs', intensity:'Hard', skills:['Speed','Bravery','Strength']},
+  {cat:'Physical & Mental', name:'Hurdle Jumps', intensity:'Hard', skills:['Speed','Aggression','Bravery']},
+  {cat:'Physical & Mental', name:'Gym', intensity:'Very Hard', skills:['Fitness','Strength']},
+  {cat:'Physical & Mental', name:'Sprint', intensity:'Very Hard', skills:['Speed','Fitness','Dribbling']}
+];
+DRILLS.forEach(d=>d.cost = INTENSITY_COST[d.intensity]);
+
+// ---- model constants ----
+const CAP = 180;
+const W_HIGHLIGHT = 1.0, W_PLAIN = 0.5;
+const COND_NOISE_REL = 0.12;
+const REST_PACK_PCT = 15;
+const N_RUNS = 800, MAX_SESSIONS_PER_DRILL = 4000;
+
+// pool points per session = C * age_mult * condition_spent * (180 - drill_average)
+// Fitted over 612 observed points across 12 datasets, ages 18-26.
+const C_UNIFIED = 0.002064;
+
+// Flat 18-21, then x0.785 per year (95% CI 0.705-0.863). dAIC = 28.6 vs no age term.
+const AGE_PLATEAU_END = 21;
+const AGE_DECAY = 0.785;
+function ageMultiplier(age){
+  return age <= AGE_PLATEAU_END ? 1.0 : Math.pow(AGE_DECAY, age - AGE_PLATEAU_END);
+}
+
+// Two layers of uncertainty: within a run the pool is a near-deterministic
+// accumulator (0.29x Poisson wander); between runs C itself varies ~10%.
+const WITHIN_RUN_WANDER = 0.29;
+const C_RUN_REL_SD = 0.102;
+
+// ---------- build skill grid ----------
+const gridEl = document.getElementById('skillGrid');
+SKILL_CATS.forEach(cat=>{
+  const catDiv = document.createElement('div');
+  catDiv.className = 'cat ' + cat.key;
+  catDiv.innerHTML = '<div class="cat-head"><span class="dot"></span>'+cat.label+'</div>';
+  cat.skills.forEach(sk=>{
+    const row = document.createElement('div');
+    row.className = 'skillrow';
+    row.innerHTML =
+      '<button type="button" class="star" data-skill="'+sk.n+'" aria-pressed="false" '
+        +'aria-label="Mark '+sk.n+' as highlighted for this player’s role">'
+        +'<svg aria-hidden="true"><use href="#ico-star"/></svg></button>'
+      +'<span class="sname" id="lbl_'+sk.n+'">'+sk.n+'</span>'
+      +'<input type="number" class="val cur" id="cur_'+sk.n+'" value="'+sk.v+'" min="0" max="250" '
+        +'inputmode="numeric" aria-label="'+sk.n+' current value">'
+      +'<input type="number" class="val target" id="tgt_'+sk.n+'" placeholder="—" min="0" max="250" '
+        +'inputmode="numeric" aria-label="'+sk.n+' target value">';
+    catDiv.appendChild(row);
+  });
+  gridEl.appendChild(catDiv);
+});
+gridEl.addEventListener('click', e=>{
+  const btn = e.target.closest('.star');
+  if(!btn) return;
+  const on = btn.getAttribute('aria-pressed') === 'true';
+  btn.setAttribute('aria-pressed', on ? 'false' : 'true');
+  syncContribStars();
+});
+function isHighlighted(skill){
+  const b = document.querySelector('.star[data-skill="'+CSS.escape(skill)+'"]');
+  return !!b && b.getAttribute('aria-pressed') === 'true';
+}
+
+const ALL_SKILLS = SKILL_CATS.flatMap(c=>c.skills.map(s=>s.n));
+
+function gaussian(mean, sd){
+  let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
+  return mean + Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*sd;
+}
+function quantile(arr,q){
+  const s=arr.slice().sort((a,b)=>a-b); const pos=(s.length-1)*q; const b=Math.floor(pos); const r=pos-b;
+  return s[b+1]!==undefined ? s[b]+r*(s[b+1]-s[b]) : s[b];
+}
+function fmt(n,d=0){ return n.toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Rotation: one pass over every skill, then a second over the highlighted ones.
+// Interleaving the passes is what keeps the per-skill counts within 1 of each
+// other, which is what every log shows. Verified exactly on Carioca with Ladders:
+// predicted Speed 26.00 / Aggression 13.00, observed 26 / 13.
+function buildRotation(drill, highlighted){
+  const rot=[];
+  for(let pass=1; pass<=2; pass++){
+    for(const s of drill.skills){
+      if((highlighted[s] ? 2 : 1) >= pass) rot.push(s);
+    }
+  }
+  return rot;
+}
+function drillWeight(drill, highlighted){
+  return drill.skills.reduce((a,s)=>a + (highlighted[s]?W_HIGHLIGHT:W_PLAIN), 0);
+}
+
+// Condition per attribute point is W / (C * age_mult * (180 - avg)). Intensity,
+// slots and age all cancel out of the comparison between drills, so the drill to
+// pick is the one covering the most targets per unit of drill weight.
+function setCover(targetSkills, highlighted){
+  let remaining = new Set(targetSkills);
+  const combo = [];
+  const used = new Set();
+  while(remaining.size>0 && combo.length<4){
+    let best=null, bestScore=-1, bestOverlap=null;
+    for(const d of DRILLS){
+      if(used.has(d.name)) continue;
+      const overlap = d.skills.filter(s=>remaining.has(s));
+      if(overlap.length===0) continue;
+      const score = overlap.length / drillWeight(d, highlighted);
+      if(score>bestScore){ best=d; bestScore=score; bestOverlap=overlap; }
+    }
+    if(!best) break;
+    combo.push({drill:best, covers:bestOverlap});
+    used.add(best.name);
+    bestOverlap.forEach(s=>remaining.delete(s));
+  }
+  return {combo, uncovered:[...remaining]};
+}
+
+function simulateSequence(combo, initialState, targets, highlighted, slots, ageMult){
+  const state = Object.assign({}, initialState);
+  const perDrill = [];
+  let totalSessions=0, totalCondition=0;
+  const trajectory = [];
+  const stalled = [];
+  let cursor = 0;
+  // One draw per run: this player's own C, held fixed, because that is how the
+  // between-run difference actually behaves.
+  const cRun = C_UNIFIED * Math.max(0.35, 1 + gaussian(0, C_RUN_REL_SD));
+  for(const {drill, covers} of combo){
+    const rot = buildRotation(drill, highlighted);
+    const costPerSession = slots * drill.cost;
+    let ptr = 0, sessions = 0, condition = 0, acc = 0;
+    while(sessions < MAX_SESSIONS_PER_DRILL){
+      const stillNeeded = covers.some(s=> targets[s]!==undefined && state[s] < targets[s]);
+      if(!stillNeeded) break;
+      const avg = drill.skills.reduce((a,s)=>a+state[s],0)/drill.skills.length;
+      if(avg >= CAP-0.5){ stalled.push(drill.name); break; }
+      const lam = cRun * ageMult * costPerSession * (CAP-avg);
+      acc += Math.max(0, lam + gaussian(0, WITHIN_RUN_WANDER*Math.sqrt(lam)));
+      const n = Math.floor(acc);
+      acc -= n;
+      for(let i=0;i<n;i++){ state[rot[ptr % rot.length]] += 1; ptr++; }
+      let cost = costPerSession;
+      cost = Math.max(0, gaussian(cost, COND_NOISE_REL*cost));
+      condition += cost;
+      sessions++; cursor++;
+      if(cursor%3===0) trajectory.push({x:cursor, y:avg, drill:drill.name});
+    }
+    perDrill.push({name:drill.name, sessions, condition});
+    totalSessions+=sessions; totalCondition+=condition;
+  }
+  return {perDrill, totalSessions, totalCondition, finalState:state, trajectory, stalled};
+}
+
+document.getElementById('runBtn').addEventListener('click', ()=>{
+  const warnBox = document.getElementById('warnBox');
+  warnBox.className='warn'; warnBox.textContent='';
+
+  const current={}, targets={}, highlighted={};
+  ALL_SKILLS.forEach(s=>{
+    current[s] = parseFloat(document.getElementById('cur_'+s).value) || 0;
+    const tval = document.getElementById('tgt_'+s).value;
+    if(tval!=='' && !isNaN(parseFloat(tval))) targets[s] = parseFloat(tval);
+    highlighted[s] = isHighlighted(s);
+  });
+  const slots = parseInt(document.getElementById('slots').value) || 5;
+  const age = parseInt(document.getElementById('age').value) || 18;
+  const ageMult = ageMultiplier(age);
+
+  const targetSkills = Object.keys(targets).filter(s=>targets[s] > current[s]);
+  let warnings=[];
+  if(targetSkills.length===0){
+    warnBox.textContent='Set at least one target higher than its current value.';
+    warnBox.classList.add('show');
+    return;
+  }
+  targetSkills.forEach(s=>{
+    if(current[s]>143) warnings.push(s+' is at '+current[s]+'%, beyond the ~143% range the model was actually fitted on.');
+  });
+  if(age>AGE_PLATEAU_END){
+    warnings.push('Age '+age+' trains at '+(ageMult*100).toFixed(0)+'% of an 18-21 year old’s rate (×'+ageMult.toFixed(3)+'). This player needs about '+(1/ageMult).toFixed(1)+'× the condition of a young player for the same gains.');
+  }
+  if(age>26){
+    warnings.push('Age '+age+' is past the oldest player logged (26), so the decline is extrapolated. It may flatten out rather than keep compounding.');
+  }
+  if(age===22){
+    warnings.push('Age 22 is the one gap in the data: 18-21 measured flat, 23 and 26 measured slow, 22 never logged. The model assumes the drop starts at 22 — if the plateau really runs through 22, this is about 21% pessimistic.');
+  }
+  const {combo, uncovered} = setCover(targetSkills, highlighted);
+  if(uncovered.length){
+    warnings.push('No drill trains: '+uncovered.join(', ')+'. Those are left out of the plan below.');
+  }
+  if(combo.length && Math.max(...combo.map(c=>c.drill.skills.length)) >= 4){
+    warnings.push('A drill’s points do NOT grow with how many skills it trains — a 5-skill drill splits the same pool five ways. Measured directly: same player, same settings, 25 sessions each gave 39 points on a 2-skill drill and 38 on a 5-skill one. If you only care about a couple of these skills, a smaller drill gets you there faster for the same condition.');
+  }
+  if(slots>=6){
+    warnings.push('On 6 slots: the two 6-slot runs logged so far came in about 15% low per unit of condition. Not statistically significant (p = 0.24), but if it holds up, 6-slot runs will finish slightly slower than shown.');
+  }
+  if(combo.length===0){
+    warnBox.textContent = 'No drill in the catalogue trains any of the skills you targeted.';
+    warnBox.classList.add('show');
+    return;
+  }
+
+  const sessionsArr=[], conditionArr=[];
+  const perDrillAgg = combo.map(c=>({name:c.drill.name, sessions:[], condition:[]}));
+  let finalSum={}; ALL_SKILLS.forEach(s=>finalSum[s]=0);
+  let sampleTraj=null; const stalledSet = new Set();
+  for(let r=0;r<N_RUNS;r++){
+    const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult);
+    sessionsArr.push(res.totalSessions); conditionArr.push(res.totalCondition);
+    res.perDrill.forEach((pd,i)=>{ perDrillAgg[i].sessions.push(pd.sessions); perDrillAgg[i].condition.push(pd.condition); });
+    ALL_SKILLS.forEach(s=>finalSum[s]+=res.finalState[s]);
+    res.stalled.forEach(d=>stalledSet.add(d));
+    if(r===Math.floor(N_RUNS/2)) sampleTraj = res.trajectory;
+  }
+  const finalAvg={}; ALL_SKILLS.forEach(s=>finalAvg[s]=finalSum[s]/N_RUNS);
+
+  if(stalledSet.size){
+    warnings.push('Out of reach: '+[...stalledSet].join(', ')+' hit the 180% ceiling before your target was met. Once a drill’s own average reaches 180 it stops producing gains.');
+  }
+  if(warnings.length){ warnBox.textContent=warnings.join(' '); warnBox.classList.add('show'); }
+
+  const sMed=quantile(sessionsArr,.5), sLo=quantile(sessionsArr,.1), sHi=quantile(sessionsArr,.9);
+  const cMed=quantile(conditionArr,.5), cLo=quantile(conditionArr,.1), cHi=quantile(conditionArr,.9);
+
+  let html = '<div class="headline">'
+    + '<div class="stat gold"><div class="num">'+fmt(sMed)+'</div><div class="lbl">training sessions (typical)</div>'
+    + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div></div>'
+    + '<div class="stat rust"><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
+    + '<div class="range">'+fmt(Math.ceil(cMed/REST_PACK_PCT))+' Rest Packs to cover it</div></div>'
+    + '</div>';
+
+  html += '<div class="tablescroll"><table class="combo"><thead><tr><th>Drill</th><th>Trains</th>'
+    + '<th style="text-align:right">Sessions</th><th style="text-align:right">Condition</th></tr></thead><tbody>';
+  perDrillAgg.forEach(pd=>{
+    const sm=quantile(pd.sessions,.5), cm=quantile(pd.condition,.5);
+    const def = combo.find(c=>c.drill.name===pd.name).drill;
+    const rot = buildRotation(def, highlighted);
+    html += '<tr><td>'+esc(pd.name)+'<div class="rot">order: '+esc(rot.join(' → '))+'</div></td>'
+      + '<td style="color:var(--dim);font-size:13px">'+esc(def.skills.join(', '))+'</td>'
+      + '<td class="num">'+fmt(sm)+'</td><td class="num">'+fmt(cm)+'%</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  html += '<div id="chartBox" class="chart-box"></div>';
+
+  html += '<div class="tablescroll"><table class="final"><thead><tr><th>Skill</th><th>Target</th>'
+    + '<th>Ends around</th></tr></thead><tbody>';
+  const touched = [...new Set(combo.flatMap(c=>c.drill.skills))];
+  touched.forEach(s=>{
+    const t = targets[s];
+    html += '<tr><td>'+esc(s)+(highlighted[s]?' ★':'')+'</td>'
+      + '<td>'+(t!==undefined?fmt(t):'—')+'</td>'
+      + '<td class="'+(t!==undefined && finalAvg[s]>t+0.5?'tgt':'')+'">'+fmt(finalAvg[s],1)+'%</td></tr>';
+  });
+  html += '</tbody></table></div>';
+
+  html += '<div class="note">Skills inside one drill rise together — the rotation keeps them within 1 of '
+    + 'each other. If you only care about one of them, the others come along at no extra cost; there is no way '
+    + 'to aim the points.</div>';
+
+  document.getElementById('resultsArea').innerHTML = html;
+  if(sampleTraj && sampleTraj.length>1) drawChart(sampleTraj);
+
+  track('calculate', {
+    age: age,
+    slots: slots,
+    drills: combo.length,
+    targets: targetSkills.length,
+    sessions_band: sMed < 25 ? 'under25' : sMed < 100 ? '25-100' : sMed < 300 ? '100-300' : 'over300'
+  });
+});
+
+function drawChart(traj){
+  const w=1000,h=190,padL=40,padR=14,padT=14,padB=28;
+  const ys = traj.map(p=>p.y);
+  const maxY=Math.max(...ys)+5, minY=Math.min(...ys)-3;
+  const n=traj.length;
+  const x=i=>padL+(i/(n-1))*(w-padL-padR);
+  const y=v=>padT+(1-(v-minY)/(maxY-minY))*(h-padT-padB);
+  const path = traj.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.y).toFixed(1)).join(' ');
+  const grid=[];
+  const step = Math.round((maxY-minY)/4/5)*5 || 5;
+  for(let gv=Math.ceil(minY/step)*step; gv<=maxY; gv+=step){
+    grid.push('<line x1="'+padL+'" y1="'+y(gv)+'" x2="'+(w-padR)+'" y2="'+y(gv)+'" stroke="#2c3238" stroke-width="1"/>');
+    grid.push('<text x="4" y="'+(y(gv)+4)+'" font-size="11">'+gv+'%</text>');
+  }
+  let markers=''; let last=null;
+  traj.forEach((p,i)=>{
+    if(p.drill!==last){
+      markers += '<line x1="'+x(i)+'" y1="'+padT+'" x2="'+x(i)+'" y2="'+(h-padB)
+        + '" stroke="#e0ac47" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>';
+      last=p.drill;
+    }
+  });
+  document.getElementById('chartBox').innerHTML =
+    '<svg width="100%" viewBox="0 0 '+w+' '+h+'" xmlns="http://www.w3.org/2000/svg" role="img" '
+    + 'aria-label="Chart showing the drill average rising from '+ys[0].toFixed(0)+'% to '
+    + ys[ys.length-1].toFixed(0)+'% over '+traj[n-1].x+' sessions.">'
+    + grid.join('') + markers
+    + '<path d="'+path+'" fill="none" stroke="#e9ebee" stroke-width="2"/>'
+    + '<circle cx="'+x(0)+'" cy="'+y(traj[0].y)+'" r="3" fill="#e9ebee"/>'
+    + '<circle cx="'+x(n-1)+'" cy="'+y(traj[n-1].y)+'" r="3" fill="#e0ac47"/>'
+    + '<text x="'+padL+'" y="'+(h-6)+'" font-size="11">session 0</text>'
+    + '<text x="'+(w-padR)+'" y="'+(h-6)+'" font-size="11" text-anchor="end">session '+traj[n-1].x+'</text>'
+    + '</svg>';
+}
+
+/* =====================  CONTRIBUTE PANEL  ===================== */
+const cDrill = document.getElementById('c_drill');
+DRILLS.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(d=>{
+  const o = document.createElement('option');
+  o.value = d.name;
+  o.textContent = d.name + '  (' + d.intensity + ')';
+  cDrill.appendChild(o);
+});
+
+function renderPairs(){
+  const drill = DRILLS.find(d=>d.name===cDrill.value);
+  const box = document.getElementById('cPairs');
+  box.innerHTML = '';
+  if(!drill) return;
+  drill.skills.forEach(s=>{
+    const row = document.createElement('div');
+    row.className = 'pairrow';
+    row.innerHTML =
+      '<span class="pname">'
+       +'<button type="button" class="star cstar" data-skill="'+esc(s)+'" aria-pressed="'+(isHighlighted(s)?'true':'false')+'" '
+       +'aria-label="Was '+esc(s)+' highlighted for this player" style="width:32px;height:32px;display:inline-flex;vertical-align:middle">'
+       +'<svg aria-hidden="true" style="width:16px;height:16px"><use href="#ico-star"/></svg></button> '
+       + esc(s) + '</span>'
+      +'<input type="number" inputmode="numeric" min="0" max="250" data-before="'+esc(s)+'" aria-label="'+esc(s)+' before">'
+      +'<input type="number" inputmode="numeric" min="0" max="250" data-after="'+esc(s)+'" aria-label="'+esc(s)+' after">';
+    box.appendChild(row);
+  });
+}
+document.getElementById('cPairs').addEventListener('click', e=>{
+  const b = e.target.closest('.cstar');
+  if(!b) return;
+  b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')==='true' ? 'false' : 'true');
+});
+function syncContribStars(){
+  document.querySelectorAll('.cstar').forEach(b=>{
+    b.setAttribute('aria-pressed', isHighlighted(b.dataset.skill) ? 'true' : 'false');
+  });
+}
+cDrill.addEventListener('change', renderPairs);
+renderPairs();
+
+// prefill age/slots from the calculator when the panel is first opened
+document.getElementById('contribPanel').addEventListener('toggle', function(){
+  if(!this.open) return;
+  const a = document.getElementById('c_age'), s = document.getElementById('c_slots');
+  if(!a.value) a.value = document.getElementById('age').value;
+  if(!s.value) s.value = document.getElementById('slots').value;
+  syncContribStars();
+  track('contribute_open');
+});
+
+function collectContribution(){
+  const drill = DRILLS.find(d=>d.name===cDrill.value);
+  const age = parseInt(document.getElementById('c_age').value);
+  const slots = parseInt(document.getElementById('c_slots').value);
+  const sessions = parseInt(document.getElementById('c_sessions').value);
+  const problems = [];
+  if(!drill) problems.push('pick a drill');
+  if(!(age>=15 && age<=40)) problems.push('enter the player’s age');
+  if(!(slots>=1 && slots<=8)) problems.push('enter how many slots you used');
+  if(!(sessions>=1)) problems.push('enter how many sessions you trained');
+
+  const skills = {};
+  if(drill){
+    drill.skills.forEach(s=>{
+      const b = document.querySelector('[data-before="'+CSS.escape(s)+'"]');
+      const a = document.querySelector('[data-after="'+CSS.escape(s)+'"]');
+      const star = document.querySelector('.cstar[data-skill="'+CSS.escape(s)+'"]');
+      const bv = parseFloat(b && b.value), av = parseFloat(a && a.value);
+      if(isNaN(bv) || isNaN(av)) problems.push('fill in before and after for '+s);
+      else if(av < bv) problems.push(s+' went down, which shouldn’t happen');
+      skills[s] = {before:bv, after:av, highlighted: !!star && star.getAttribute('aria-pressed')==='true'};
+    });
+  }
+  return {problems, payload:{
+    submitted: new Date().toISOString(),
+    modelVersion: CONFIG.modelVersion,
+    age, slots, sessions,
+    drill: drill ? drill.name : null,
+    intensity: drill ? drill.intensity : null,
+    skills
+  }};
+}
+
+function setStatus(msg, kind){
+  const el = document.getElementById('cStatus');
+  el.textContent = msg;
+  el.className = 'cstatus' + (kind ? ' '+kind : '');
+}
+
+document.getElementById('cSend').addEventListener('click', async ()=>{
+  const {problems, payload} = collectContribution();
+  if(problems.length){
+    setStatus('Before sending: ' + problems.join('; ') + '.', 'bad');
+    return;
+  }
+  if(!CONFIG.submitEndpoint){
+    setStatus('Sending isn’t switched on yet — use "Copy instead" and send it to me directly.', 'bad');
+    return;
+  }
+  const btn = document.getElementById('cSend');
+  btn.disabled = true; setStatus('Sending…');
+  try{
+    const r = await fetch(CONFIG.submitEndpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if(!r.ok) throw new Error('status '+r.status);
+    setStatus('Sent — thank you. This genuinely improves the model.', 'ok');
+    track('contribute_sent', {age: payload.age, drill: payload.drill, sessions: payload.sessions});
+    btn.textContent = 'Sent';
+  }catch(err){
+    setStatus('That didn’t go through. Tap "Copy instead" and send it to me directly.', 'bad');
+    btn.disabled = false;
+  }
+});
+
+document.getElementById('cCopy').addEventListener('click', async ()=>{
+  const {problems, payload} = collectContribution();
+  if(problems.length){
+    setStatus('Before copying: ' + problems.join('; ') + '.', 'bad');
+    return;
+  }
+  const text = JSON.stringify(payload, null, 2);
+  try{
+    await navigator.clipboard.writeText(text);
+    setStatus('Copied. Paste it wherever you send feedback.', 'ok');
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); setStatus('Copied.', 'ok'); }
+    catch(e2){ setStatus('Couldn’t copy automatically — select the numbers and copy them manually.', 'bad'); }
+    document.body.removeChild(ta);
+  }
+  track('contribute_copied');
+});
+</script>
+</body>
+</html>

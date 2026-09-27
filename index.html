@@ -94,6 +94,44 @@
         border:1px solid var(--line);border-bottom:none;background:var(--panel2);}
   .col-labels span{text-align:center;}
 
+  /* Highlighted rows read lighter, like the white key-attribute rows in-game. */
+  .skillrow.hl{background:#242b31;}
+
+  /* ---- role picker: in-game position badges laid out as a pitch ---- */
+  .roles{display:flex;flex-wrap:wrap;gap:var(--sp3) var(--sp4);align-items:center;
+        background:var(--panel);border:1px solid var(--line);padding:var(--sp3);margin-bottom:var(--sp3);}
+  .pitch{position:relative;display:grid;grid-template-columns:repeat(3,1fr);
+        grid-template-rows:repeat(5,auto);gap:10px 12px;padding:18px 16px;
+        width:100%;max-width:330px;flex:none;border:2px solid #3f6b4b;border-radius:6px;
+        background:repeating-linear-gradient(to bottom,#1e4a2b 0 31px,#1b4327 31px 62px);}
+  .pitch::before{content:"";position:absolute;left:0;right:0;top:50%;border-top:2px solid rgba(255,255,255,.14);}
+  .pitch::after{content:"";position:absolute;left:22%;right:22%;bottom:-2px;height:15%;
+        border:2px solid rgba(255,255,255,.14);border-bottom:none;}
+  .pos{--f:#e8d26e;--b:#a68d45;--t:#3a3223;
+        position:relative;z-index:1;justify-self:center;min-width:66px;min-height:var(--tap);
+        padding:0 10px;border-radius:5px;cursor:pointer;
+        font-weight:700;font-size:18px;letter-spacing:-.01em;line-height:1;
+        background:#15321d;color:var(--f);border:2px solid var(--f);opacity:.62;
+        transition:opacity .15s ease,transform .1s ease;}
+  .chip{--f:#e8d26e;--b:#a68d45;--t:#3a3223;}
+  .pos.def,.chip.def{--f:#74d46b;--b:#3f933f;--t:#173f17;}
+  .pos.fwd,.chip.fwd{--f:#ee6f6a;--b:#a94646;--t:#4e1010;}
+  .pos:hover{opacity:.9;}
+  .pos[aria-pressed="true"]{opacity:1;color:var(--t);border-color:var(--b);
+        background:linear-gradient(to bottom,color-mix(in srgb,var(--f) 80%,#fff) 0%,var(--f) 45%,var(--f) 100%);
+        box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 0 rgba(0,0,0,.4);}
+  .pos:active{transform:translateY(1px);}
+  .pos:disabled{opacity:.22;cursor:not-allowed;transform:none;}
+  .roles-info{flex:1 1 240px;min-width:0;}
+  .roles-info h2{font-size:16px;margin:0 0 6px;font-weight:700;}
+  .roles-info p{font-size:13px;color:var(--dim);margin:0 0 var(--sp2);line-height:1.55;}
+  .rolesum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;min-height:var(--tap);}
+  .rolesum .chip{display:inline-block;padding:4px 8px;border-radius:4px;font-weight:700;font-size:14px;
+        color:var(--t);background:var(--f);border:1px solid var(--b);}
+  .rolesum .count{color:var(--gold);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;}
+  .rolesum .manual{color:var(--rust);font-size:12px;}
+  .rolesum .none{color:var(--dim);}
+
   .legend{font-size:13px;color:var(--dim);margin:0 0 var(--sp3);line-height:1.55;}
   .legend b{color:var(--gold);font-weight:600;}
 
@@ -105,7 +143,12 @@
   .field input{width:84px;min-height:var(--tap);background:var(--panel2);
         border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
         font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:6px 10px;}
-  .field input:focus{outline:none;border-color:var(--gold);}
+  .field select{width:84px;min-height:var(--tap);background:var(--panel2);
+        border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:6px 10px;}
+  .field select.wide{width:120px;}
+  .field select.wider{width:150px;}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--gold);}
   button.run{flex:1 1 220px;min-height:52px;background:var(--gold);color:#1a1400;
         border:none;border-radius:var(--radius);font-weight:700;font-size:16px;
         padding:12px 22px;cursor:pointer;transition:background .15s ease;}
@@ -133,6 +176,19 @@
   .stat .lbl{font-size:12px;color:var(--dim);margin-top:var(--sp1);}
   .stat .range{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px;
         color:var(--dim);margin-top:4px;font-variant-numeric:tabular-nums;}
+
+  /* ---- condition card with a Rest Pack pile that grows with the count ---- */
+  .stat.rest{display:flex;flex-direction:column;gap:var(--sp2);
+        background:radial-gradient(ellipse 80% 55% at 50% 100%,rgba(62,207,110,.13),transparent 70%),var(--panel2);}
+  .stat.rest .num{color:var(--rust);}
+  .pile{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:auto;}
+  .pile svg{display:block;max-width:100%;height:auto;overflow:visible;}
+  .pile .tile{animation:packDrop .45s cubic-bezier(.3,1.5,.6,1) backwards;}
+  @keyframes packDrop{from{opacity:0;transform:translateY(-26px);}}
+  .packtag{display:flex;align-items:center;gap:6px;font-weight:700;font-size:22px;
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+  .packtag svg{width:30px;height:23px;}
+  .packtag small{font-family:'Space Grotesk',system-ui,sans-serif;font-size:12px;font-weight:400;color:var(--dim);}
 
   .tablescroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:var(--sp3);}
   table{width:100%;border-collapse:collapse;font-size:14px;}
@@ -219,6 +275,20 @@
   <symbol id="ico-star" viewBox="0 0 24 24">
     <path fill="currentColor" d="M12 2.5l2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.35l-5.81 3.05 1.11-6.47-4.7-4.58 6.5-.95z"/>
   </symbol>
+  <defs>
+    <linearGradient id="rp-face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6fdc7c"/><stop offset=".55" stop-color="#3fb84f"/><stop offset="1" stop-color="#2e9a3c"/>
+    </linearGradient>
+  </defs>
+  <!-- Rest Pack tile, after the in-game shop art: green slab, white clock-with-arrow. -->
+  <symbol id="ico-restpack" viewBox="0 0 52 40">
+    <rect x="2" y="8" width="48" height="30" rx="6" fill="#17671f"/>
+    <rect x="2" y="2" width="48" height="30" rx="6" fill="url(#rp-face)" stroke="#16691d" stroke-width="1.5"/>
+    <rect x="5.5" y="5.5" width="41" height="23" rx="4" fill="none" stroke="#a6f0ae" stroke-opacity=".55" stroke-width="1.2"/>
+    <path d="M19.07 13 A8 8 0 1 0 26 9" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+    <path d="M22.3 9 L27.2 5.4 L27.2 12.6 Z" fill="#fff"/>
+    <path d="M26 12.6 V17 H29.4" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
   <symbol id="ico-chev" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
           stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -232,8 +302,24 @@
       <span class="ver" id="verTag"></span>
     </div>
     <h1>How long will this player take?</h1>
-    <p>Set a target for the skills you want to raise, mark which ones are <b style="color:#e0ac47">highlighted</b> (white) for the player's role, and this works out how many sessions and how much condition it takes. The numbers come from real logged training data, not guesswork &mdash; and it will tell you where it is unsure.</p>
+    <p>Enter the player's age and roles, set a target for the skills you want to raise, and this works out how many sessions and how much condition it takes. The numbers come from real logged training data, not guesswork &mdash; and it will tell you where it is unsure.</p>
   </header>
+
+  <div class="roles">
+    <div class="pitch" id="pitch" role="group" aria-label="Player roles"></div>
+    <div class="roles-info">
+      <h2>Player</h2>
+      <div class="field" style="margin-bottom:var(--sp3)">
+        <label for="age">Age</label>
+        <input type="number" id="age" value="18" min="15" max="40" inputmode="numeric">
+      </div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:6px">Roles</div>
+      <p>Tap every role the player has in-game (up to 3). The skills each role highlights (white in-game) are starred
+        below automatically &mdash; a player with several roles gets all of them, with no double-counting.
+        DL/DR, ML/MR and AML/AMR highlight the same skills; only the side differs.</p>
+      <div class="rolesum" id="roleSum" role="status" aria-live="polite"></div>
+    </div>
+  </div>
 
   <div class="col-labels">
     <span></span><span style="text-align:left">SKILL</span><span>NOW</span><span>TARGET</span>
@@ -241,17 +327,32 @@
   <div class="catgrid" id="skillGrid"></div>
 
   <p class="legend">
-    Tap the star to mark a skill <b>highlighted</b> (white in-game for that player's role). Highlighted skills gain twice as fast. Set it whether or not you're targeting that skill &mdash; it's a property of the player's position, not of what you're training.
+    Starred skills are <b>highlighted</b> for the player's roles and gain twice as fast. The roles above set the
+    stars for you; tap a star only if you need to override them.
   </p>
 
   <div class="setup">
     <div class="field">
-      <label for="age">Player age</label>
-      <input type="number" id="age" value="18" min="15" max="40" inputmode="numeric">
+      <label for="drillLevel">Drill level</label>
+      <select id="drillLevel" class="wider">
+        <option value="Amateur" selected>Amateur</option><option value="Semi-Pro">Semi-Pro</option>
+        <option value="Pro">Pro</option><option value="World Class">World Class</option>
+      </select>
     </div>
     <div class="field">
       <label for="slots">Drill slots</label>
-      <input type="number" id="slots" value="6" min="1" max="8" inputmode="numeric">
+      <select id="slots">
+        <option>1</option><option>2</option><option>3</option>
+        <option>4</option><option>5</option><option selected>6</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="drainBoost">Condition drain boost</label>
+      <select id="drainBoost" class="wide">
+        <option value="0" selected>None</option>
+        <option value="10">−10%</option><option value="20">−20%</option><option value="30">−30%</option>
+        <option value="40">−40%</option><option value="50">−50%</option>
+      </select>
     </div>
     <button class="run" id="runBtn">Find drills &amp; calculate</button>
   </div>
@@ -290,13 +391,21 @@
         </div>
         <div class="cfield">
           <label for="c_slots">Drill slots per session</label>
-          <input type="number" id="c_slots" min="1" max="8" inputmode="numeric" placeholder="e.g. 6">
+          <input type="number" id="c_slots" min="1" max="6" inputmode="numeric" placeholder="1 to 6">
           <span class="hint">How many slots you filled with this drill.</span>
         </div>
         <div class="cfield">
           <label for="c_drill">Which drill</label>
           <select id="c_drill"></select>
           <span class="hint">Pick the single drill you ran for the whole stretch.</span>
+        </div>
+        <div class="cfield">
+          <label for="c_level">Drill level</label>
+          <select id="c_level">
+            <option value="">Pick one</option><option>Amateur</option><option>Semi-Pro</option>
+            <option>Pro</option><option>World Class</option>
+          </select>
+          <span class="hint">The level of that drill during the run. It changes the result by up to 30%.</span>
         </div>
         <div class="cfield">
           <label for="c_sessions">Sessions trained</label>
@@ -338,7 +447,7 @@
       <summary><svg width="14" height="14" aria-hidden="true"><use href="#ico-chev"/></svg> The full model, and where it's uncertain</summary>
       <div style="padding-top:12px">
         <div class="sec"><strong>The formula.</strong>
-          <span class="mono">points = 0.002064 &times; age_mult &times; condition_spent &times; (180 &minus; drill_average)</span>,
+          <span class="mono">points = 0.002064 &times; age_mult &times; level_mult &times; condition_spent &times; (180 &minus; drill_average)</span>,
           where <span class="mono">condition_spent = slots &times; intensity</span>. Slot count, drill intensity and
           drill size all act through condition spent &mdash; they need no separate terms. Note that condition cost per
           session is flat at any level; what a higher drill average reduces is the points that session buys.</div>
@@ -351,18 +460,22 @@
           over the highlighted ones. Verified exactly: on Carioca with Ladders the rotation predicted 26.00 and 13.00
           points; the real log gave 26 and 13.</div>
         <div class="sec"><strong>Condition.</strong> slots &times; intensity (Very Easy 0.75% &middot; Easy 1.5% &middot;
-          Medium 2.25% &middot; Hard 3% &middot; Very Hard 3.75%), flat in level and age. Rest Packs restore 15%.</div>
-        <div class="sec"><strong>Drill level.</strong> Every number here is measured on <strong>Amateur-level
-          (unupgraded) drills</strong>. The game says upgrading a drill adds 10% at Semi-Pro, 20% at Pro and 30% at
-          World Class. A direct test of Amateur vs Semi-Pro on one player found a gain multiplier of
-          <span class="mono">0.99</span> (95% CI 0.77&ndash;1.35) &mdash; so no bonus was visible, but the test was
-          nowhere near precise enough to rule one out either. What that test <em>did</em> settle is that the bonus is
-          not a condition discount: both drills cost the same per session to within a hundredth of a percent. If you
-          train on upgraded drills, treat the session counts here as a possible over-estimate by up to the
-          percentage the game quotes.</div>
+          Medium 2.25% &middot; Hard 3% &middot; Very Hard 3.75%), flat in level and age. Rest Packs restore 15%.
+          A Campus <em>condition drain boost</em> cuts the condition drained but not the points: at &minus;10% a
+          25-session run drained 0.89&times; the listed cost while gaining exactly what the listed cost predicts.
+          Bigger boosts (&minus;20% to &minus;50%) are assumed to work the same way.</div>
+        <div class="sec"><strong>Drill level.</strong> The game says upgrading a drill adds 10% at Semi-Pro, 20% at
+          Pro and 30% at World Class, and that holds up. One player trained 25 sessions at each level, so
+          player-to-player differences cancel out. Measured: Semi-Pro <span class="mono">&times;1.11</span>, Pro
+          <span class="mono">&times;1.23</span>, World Class <span class="mono">&times;1.31</span>, each within half
+          a standard error of the advertised value. The calculator uses the advertised
+          <span class="mono">1.10 / 1.20 / 1.30</span>. Level speeds up gains only: every run drained exactly the
+          listed condition, so upgraded drills are not cheaper per session. (An earlier test that found only +4% at
+          Semi-Pro is overturned. Its "Amateur" comparison run was most likely on an upgraded drill.)</div>
         <div class="sec"><strong>Where it's weakest.</strong> Age 22 was never logged, so the model assumes the
           plateau ends at 21. Ages past 26 are extrapolated. Two 6-slot runs came in ~15% low (not statistically
-          significant). Player-to-player variation of about &plusmn;10% is real and unexplained. The rate was fitted on
+          significant). Player-to-player variation of about &plusmn;10% is real and unexplained. Drill levels were
+          measured on one player, and the level setting applies to every drill in the plan. The rate was fitted on
           six drills; the rest of the catalogue is an educated extension. Teamplay drills and Goalkeeper Training
           aren't included at all. Ranges shown are 10th&ndash;90th percentile, not guarantees.</div>
       </div>
@@ -398,7 +511,7 @@ const CONFIG = {
 
   // Shown in the header and attached to every submitted log, so you always
   // know which version of the model produced a given result.
-  modelVersion   : "model v0.4 · 2026-09-15"
+  modelVersion   : "model v0.5 · 2026-09-27"
 };
 /* ===================================================================== */
 
@@ -474,6 +587,13 @@ const CAP = 180;
 const W_HIGHLIGHT = 1.0, W_PLAIN = 0.5;
 const COND_NOISE_REL = 0.12;
 const REST_PACK_PCT = 15;
+const MAX_SLOTS = 6;       // the game allows at most 6 drills per session
+const MAX_ROLES = 3;       // a player can hold at most 3 roles
+
+// Drill level multiplies the points a session buys, never its condition cost.
+// Same-player test (Pagnoni, 2026-09-26/27): 1.114 / 1.229 / 1.305 measured against
+// the advertised 1.10 / 1.20 / 1.30; the advertised values are used.
+const DRILL_LEVELS = {'Amateur':1.00, 'Semi-Pro':1.10, 'Pro':1.20, 'World Class':1.30};
 const N_RUNS = 800, MAX_SESSIONS_PER_DRILL = 4000;
 
 // pool points per session = C * age_mult * condition_spent * (180 - drill_average)
@@ -519,12 +639,110 @@ gridEl.addEventListener('click', e=>{
   if(!btn) return;
   const on = btn.getAttribute('aria-pressed') === 'true';
   btn.setAttribute('aria-pressed', on ? 'false' : 'true');
+  starsEditedByHand = true;
+  syncStarRows();
+  renderRoleSummary();
   syncContribStars();
 });
 function isHighlighted(skill){
   const b = document.querySelector('.star[data-skill="'+CSS.escape(skill)+'"]');
   return !!b && b.getAttribute('aria-pressed') === 'true';
 }
+function syncStarRows(){
+  document.querySelectorAll('#skillGrid .star').forEach(b=>{
+    b.closest('.skillrow').classList.toggle('hl', b.getAttribute('aria-pressed') === 'true');
+  });
+}
+
+// ---------- roles ----------
+// Highlighted skills per role, read off in-game screenshots (2026-09-25) by cell
+// brightness: every cell measured either 198 (plain) or 232 (highlighted).
+// Left/right pairs share a set. A multi-role player gets the union, checked on
+// Elbaz (DMC+MC+AMC): all 14 outfield skills except Crossing, as the union predicts.
+const HL_FULLBACK = ['Tackling','Marking','Positioning','Bravery','Crossing','Fitness','Aggression','Speed'];
+const HL_WIDE_MID = ['Positioning','Passing','Dribbling','Crossing','Fitness','Speed','Creativity'];
+const HL_WINGER   = ['Passing','Dribbling','Crossing','Shooting','Finishing','Fitness','Speed','Creativity'];
+const ROLES = {
+  DL:{grp:'def', hl:HL_FULLBACK},
+  DC:{grp:'def', hl:['Tackling','Marking','Positioning','Heading','Bravery','Fitness','Strength','Aggression']},
+  DR:{grp:'def', hl:HL_FULLBACK},
+  DMC:{grp:'mid', hl:['Tackling','Marking','Positioning','Heading','Bravery','Passing','Fitness','Strength','Aggression','Creativity']},
+  ML:{grp:'mid', hl:HL_WIDE_MID},
+  MC:{grp:'mid', hl:['Tackling','Marking','Positioning','Bravery','Passing','Dribbling','Shooting','Fitness','Speed','Creativity']},
+  MR:{grp:'mid', hl:HL_WIDE_MID},
+  AML:{grp:'mid', hl:HL_WINGER},
+  AMC:{grp:'mid', hl:['Heading','Passing','Dribbling','Shooting','Finishing','Fitness','Speed','Creativity']},
+  AMR:{grp:'mid', hl:HL_WINGER},
+  ST:{grp:'fwd', hl:['Positioning','Heading','Passing','Dribbling','Shooting','Finishing','Strength','Speed','Creativity']}
+};
+// [role, column, row] on a pitch drawn attack-at-top, as in the game's formation screen.
+const PITCH_LAYOUT = [
+  ['ST',2,1], ['AML',1,2],['AMC',2,2],['AMR',3,2], ['ML',1,3],['MC',2,3],['MR',3,3],
+  ['DMC',2,4], ['DL',1,5],['DC',2,5],['DR',3,5]
+];
+const selectedRoles = new Set();
+let starsEditedByHand = false;
+
+const pitchEl = document.getElementById('pitch');
+PITCH_LAYOUT.forEach(([r,col,row])=>{
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'pos ' + ROLES[r].grp;
+  b.dataset.role = r;
+  b.textContent = r;
+  b.setAttribute('aria-pressed','false');
+  b.style.gridColumn = col; b.style.gridRow = row;
+  pitchEl.appendChild(b);
+});
+pitchEl.addEventListener('click', e=>{
+  const b = e.target.closest('.pos');
+  if(!b) return;
+  const r = b.dataset.role;
+  if(selectedRoles.has(r)) selectedRoles.delete(r);
+  else if(selectedRoles.size < MAX_ROLES) selectedRoles.add(r);
+  b.setAttribute('aria-pressed', selectedRoles.has(r) ? 'true' : 'false');
+  lockPitch();
+  applyRoles();
+});
+// With 3 roles picked, the rest of the pitch is disabled until one is removed.
+function lockPitch(){
+  const full = selectedRoles.size >= MAX_ROLES;
+  pitchEl.querySelectorAll('.pos').forEach(b=>{
+    b.disabled = full && !selectedRoles.has(b.dataset.role);
+  });
+}
+function roleHighlights(){
+  const hl = new Set();
+  selectedRoles.forEach(r=>ROLES[r].hl.forEach(s=>hl.add(s)));
+  return hl;
+}
+function applyRoles(){
+  const hl = roleHighlights();
+  document.querySelectorAll('#skillGrid .star').forEach(b=>{
+    b.setAttribute('aria-pressed', hl.has(b.dataset.skill) ? 'true' : 'false');
+  });
+  starsEditedByHand = false;
+  syncStarRows();
+  renderRoleSummary();
+  syncContribStars();
+}
+function orderedRoles(){
+  return PITCH_LAYOUT.map(p=>p[0]).filter(r=>selectedRoles.has(r)).reverse();
+}
+function renderRoleSummary(){
+  const el = document.getElementById('roleSum');
+  const starred = document.querySelectorAll('#skillGrid .star[aria-pressed="true"]').length;
+  if(!selectedRoles.size){
+    el.innerHTML = '<span class="none">No role picked yet.</span>'
+      + (starred ? ' <span class="count">'+starred+' starred by hand</span>' : '');
+    return;
+  }
+  el.innerHTML = orderedRoles().map(r=>'<span class="chip '+ROLES[r].grp+'">'+r+'</span>').join('')
+    + ' <span class="count">&rarr; '+starred+' highlighted skill'+(starred===1?'':'s')+'</span>'
+    + (selectedRoles.size >= MAX_ROLES ? ' <span class="none">· 3 roles is the maximum</span>' : '')
+    + (starsEditedByHand ? ' <span class="manual">(stars changed by hand)</span>' : '');
+}
+renderRoleSummary();
 
 const ALL_SKILLS = SKILL_CATS.flatMap(c=>c.skills.map(s=>s.n));
 
@@ -580,7 +798,11 @@ function setCover(targetSkills, highlighted){
   return {combo, uncovered:[...remaining]};
 }
 
-function simulateSequence(combo, initialState, targets, highlighted, slots, ageMult){
+// drainMult < 1 models a Campus condition drain boost. It cuts the condition a
+// session drains, NOT the points it buys: tested 2026-09-25 at -10% on Cobeño,
+// points followed the listed cost (1.06x his known C) not the drained one (1.19x).
+// -20% to -50% assume the same behaviour; untested.
+function simulateSequence(combo, initialState, targets, highlighted, slots, ageMult, drainMult, levelMult){
   const state = Object.assign({}, initialState);
   const perDrill = [];
   let totalSessions=0, totalCondition=0;
@@ -599,12 +821,12 @@ function simulateSequence(combo, initialState, targets, highlighted, slots, ageM
       if(!stillNeeded) break;
       const avg = drill.skills.reduce((a,s)=>a+state[s],0)/drill.skills.length;
       if(avg >= CAP-0.5){ stalled.push(drill.name); break; }
-      const lam = cRun * ageMult * costPerSession * (CAP-avg);
+      const lam = cRun * ageMult * levelMult * costPerSession * (CAP-avg);
       acc += Math.max(0, lam + gaussian(0, WITHIN_RUN_WANDER*Math.sqrt(lam)));
       const n = Math.floor(acc);
       acc -= n;
       for(let i=0;i<n;i++){ state[rot[ptr % rot.length]] += 1; ptr++; }
-      let cost = costPerSession;
+      let cost = costPerSession * drainMult;
       cost = Math.max(0, gaussian(cost, COND_NOISE_REL*cost));
       condition += cost;
       sessions++; cursor++;
@@ -627,7 +849,10 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
     if(tval!=='' && !isNaN(parseFloat(tval))) targets[s] = parseFloat(tval);
     highlighted[s] = isHighlighted(s);
   });
-  const slots = parseInt(document.getElementById('slots').value) || 5;
+  const slots = Math.min(MAX_SLOTS, Math.max(1, parseInt(document.getElementById('slots').value) || MAX_SLOTS));
+  const drainBoost = parseInt(document.getElementById('drainBoost').value) || 0;
+  const drillLevel = document.getElementById('drillLevel').value;
+  const levelMult = DRILL_LEVELS[drillLevel] || 1.0;
   const age = parseInt(document.getElementById('age').value) || 18;
   const ageMult = ageMultiplier(age);
 
@@ -657,6 +882,9 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   if(combo.length && Math.max(...combo.map(c=>c.drill.skills.length)) >= 4){
     warnings.push('A drill’s points do NOT grow with how many skills it trains — a 5-skill drill splits the same pool five ways. Measured directly: same player, same settings, 25 sessions each gave 39 points on a 2-skill drill and 38 on a 5-skill one. If you only care about a couple of these skills, a smaller drill gets you there faster for the same condition.');
   }
+  if(drainBoost > 10){
+    warnings.push('Drain boost −'+drainBoost+'%: condition and Rest Packs are cut by '+drainBoost+'%, sessions are not. That boosts only save condition, not add training points, was measured at −10%; bigger boosts are assumed to behave the same.');
+  }
   if(slots>=6){
     warnings.push('On 6 slots: the two 6-slot runs logged so far came in about 15% low per unit of condition. Not statistically significant (p = 0.24), but if it holds up, 6-slot runs will finish slightly slower than shown.');
   }
@@ -671,7 +899,7 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   let finalSum={}; ALL_SKILLS.forEach(s=>finalSum[s]=0);
   let sampleTraj=null; const stalledSet = new Set();
   for(let r=0;r<N_RUNS;r++){
-    const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult);
+    const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult, 1 - drainBoost/100, levelMult);
     sessionsArr.push(res.totalSessions); conditionArr.push(res.totalCondition);
     res.perDrill.forEach((pd,i)=>{ perDrillAgg[i].sessions.push(pd.sessions); perDrillAgg[i].condition.push(pd.condition); });
     ALL_SKILLS.forEach(s=>finalSum[s]+=res.finalState[s]);
@@ -691,8 +919,10 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   let html = '<div class="headline">'
     + '<div class="stat gold"><div class="num">'+fmt(sMed)+'</div><div class="lbl">training sessions (typical)</div>'
     + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div></div>'
-    + '<div class="stat rust"><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
-    + '<div class="range">'+fmt(Math.ceil(cMed/REST_PACK_PCT))+' Rest Packs to cover it</div></div>'
+    + '<div class="stat rest"><div><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
+    + '<div class="range">'+fmt(cLo)+'–'+fmt(cHi)+'% depending on luck</div></div>'
+    + restPackPile(Math.ceil(cMed/REST_PACK_PCT))
+    + '</div>'
     + '</div>';
 
   html += '<div class="tablescroll"><table class="combo"><thead><tr><th>Drill</th><th>Trains</th>'
@@ -730,11 +960,60 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   track('calculate', {
     age: age,
     slots: slots,
+    drain_boost: drainBoost,
+    drill_level: drillLevel,
     drills: combo.length,
     targets: targetSkills.length,
+    roles: orderedRoles().join('+') || (starsEditedByHand ? 'manual' : 'none'),
     sessions_band: sMed < 25 ? 'under25' : sMed < 100 ? '25-100' : sMed < 300 ? '100-300' : 'over300'
   });
 });
+
+// A pile of Rest Pack tiles that grows with the count, stacked as a mound:
+// bottom layer b wide, each layer above one narrower. One tile per pack up to 6,
+// then growth slows (log scale) and stops at 21 tiles so the pile stays a
+// garnish, not the page. The number underneath is always exact.
+const PILE_MAX_TILES = 21, PILE_SCALE = 0.8;
+function pileTiles(packs){
+  if(packs <= 6) return Math.max(packs,1);
+  return Math.min(PILE_MAX_TILES, Math.round(6 + 4*Math.log2(packs/6)));
+}
+function restPackPile(packs){
+  const n = pileTiles(packs);
+  let base = 1; while(base*(base+1)/2 < n) base++;
+  // seeded so the same count always gives the same pile
+  let seed = packs*2654435761 >>> 0;
+  const rnd = ()=>{ seed = (seed + 0x6D2B79F5) >>> 0; let t = seed;
+    t = Math.imul(t ^ t>>>15, t|1); t ^= t + Math.imul(t ^ t>>>7, t|61);
+    return ((t ^ t>>>14) >>> 0) / 4294967296; };
+  const TW=52, TH=40, STEP_X=34, RISE=15;
+  const tiles=[]; let left=n, layer=0;
+  while(left>0){
+    const count = Math.min(base-layer, left);
+    for(let i=0;i<count;i++){
+      const x = (i - (count-1)/2)*STEP_X + (rnd()-.5)*8;
+      const y = -layer*RISE + (rnd()-.5)*6;
+      const rot = (rnd()-.5)*(count===1 && layer===0 ? 20 : 44);
+      tiles.push({x,y,rot,layer});
+    }
+    left -= count; layer++;
+  }
+  const halfW = (base-1)/2*STEP_X + TW/2 + 12;
+  const top = (layer-1)*RISE + TH/2 + 14, bottom = TH/2 + 12;
+  const W = halfW*2, H = top+bottom;
+  let g = '<ellipse cx="0" cy="'+(TH/2+4)+'" rx="'+(halfW-6)+'" ry="9" fill="#000" opacity=".35"/>';
+  tiles.forEach((t,i)=>{
+    g += '<g class="tile" style="animation-delay:'+(i*28)+'ms"><use href="#ico-restpack" width="'+TW+'" height="'+TH+'" '
+      + 'transform="translate('+t.x.toFixed(1)+' '+t.y.toFixed(1)+') rotate('+t.rot.toFixed(1)+') translate('+(-TW/2)+' '+(-TH/2)+')"/></g>';
+  });
+  const label = packs===1 ? 'Rest Pack' : 'Rest Packs';
+  return '<div class="pile">'
+    + '<svg width="'+Math.round(W*PILE_SCALE)+'" viewBox="'+(-halfW)+' '+(-top)+' '+W+' '+H+'" role="img" '
+    + 'aria-label="'+packs+' '+label+'">'+g+'</svg>'
+    + '<div class="packtag"><svg aria-hidden="true"><use href="#ico-restpack"/></svg>'+fmt(packs)
+    + ' <small>'+label+' to cover it ('+REST_PACK_PCT+'% each)</small></div>'
+    + '</div>';
+}
 
 function drawChart(traj){
   const w=1000,h=190,padL=40,padR=14,padT=14,padB=28;
@@ -830,7 +1109,9 @@ function collectContribution(){
   const problems = [];
   if(!drill) problems.push('pick a drill');
   if(!(age>=15 && age<=40)) problems.push('enter the player’s age');
-  if(!(slots>=1 && slots<=8)) problems.push('enter how many slots you used');
+  if(!(slots>=1 && slots<=MAX_SLOTS)) problems.push('enter how many slots you used (1 to 6)');
+  const level = document.getElementById('c_level').value;
+  if(!DRILL_LEVELS[level]) problems.push('pick the drill level');
   if(!(sessions>=1)) problems.push('enter how many sessions you trained');
 
   const skills = {};
@@ -851,6 +1132,7 @@ function collectContribution(){
     age, slots, sessions,
     drill: drill ? drill.name : null,
     intensity: drill ? drill.intensity : null,
+    drillLevel: level || null,
     skills
   }};
 }

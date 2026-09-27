@@ -147,7 +147,23 @@
         border:1px solid var(--line);color:var(--text);border-radius:var(--radius);
         font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;padding:6px 10px;}
   .field select.wide{width:120px;}
-  .field select.wider{width:150px;}
+
+  /* ---- per-drill levels ---- */
+  .levels{margin:0 0 var(--sp3);}
+  .lvlcount{font-size:13px;font-weight:400;color:var(--gold);}
+  select.lvlsel{min-height:36px;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+        border-radius:var(--radius);font-family:'JetBrains Mono',ui-monospace,monospace;font-size:14px;padding:4px 6px;}
+  select.lvlsel:focus{outline:none;border-color:var(--gold);}
+  select.lvlsel.up{border-color:var(--gold);color:var(--gold);}
+  .lvlgrid{display:grid;grid-template-columns:1fr;gap:0 var(--sp4);margin-top:var(--sp3);}
+  @media(min-width:640px){ .lvlgrid{grid-template-columns:1fr 1fr;} }
+  .lvlcat{grid-column:1/-1;font-size:12px;color:var(--gold);font-family:'JetBrains Mono',ui-monospace,monospace;
+        letter-spacing:.06em;margin:var(--sp2) 0 4px;}
+  .lvlrow{display:flex;justify-content:space-between;align-items:center;gap:var(--sp2);
+        padding:4px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .combo td .lvlsel{margin-top:6px;}
+  .plan-note{border-left:2px solid var(--gold);padding:6px var(--sp2);margin:0 0 var(--sp3);font-size:14px;}
+  .plan-note b{color:var(--gold);}
   .field input:focus,.field select:focus{outline:none;border-color:var(--gold);}
   button.run{flex:1 1 220px;min-height:52px;background:var(--gold);color:#1a1400;
         border:none;border-radius:var(--radius);font-weight:700;font-size:16px;
@@ -333,13 +349,6 @@
 
   <div class="setup">
     <div class="field">
-      <label for="drillLevel">Drill level</label>
-      <select id="drillLevel" class="wider">
-        <option value="Amateur" selected>Amateur</option><option value="Semi-Pro">Semi-Pro</option>
-        <option value="Pro">Pro</option><option value="World Class">World Class</option>
-      </select>
-    </div>
-    <div class="field">
       <label for="slots">Drill slots</label>
       <select id="slots">
         <option>1</option><option>2</option><option>3</option>
@@ -356,6 +365,24 @@
     </div>
     <button class="run" id="runBtn">Find drills &amp; calculate</button>
   </div>
+
+  <details class="contrib levels" id="levelsPanel">
+    <summary>
+      <svg class="chev" width="16" height="16" aria-hidden="true"><use href="#ico-chev"/></svg>
+      My drill levels <span class="lvlcount" id="lvlCount"></span>
+    </summary>
+    <div class="contrib-body">
+      <p>Upgraded drills train faster: Semi-Pro +10%, Pro +20%, World Class +30%. That changes which drills
+        are fastest for you, not just how long they take. You can set each drill's level here or on the plan
+        itself. Levels are remembered in this browser, so you only set them once.</p>
+      <div class="crow" style="margin-top:0">
+        <label for="lvlAll" style="font-size:13px;color:var(--dim)">Set every drill to</label>
+        <select id="lvlAll" class="lvlsel"><option>Amateur</option><option>Semi-Pro</option><option>Pro</option><option>World Class</option></select>
+        <button type="button" class="ghost" id="lvlAllBtn">Apply to all</button>
+      </div>
+      <div class="lvlgrid" id="lvlGrid"></div>
+    </div>
+  </details>
 
   <div class="warn" id="warnBox" role="status" aria-live="polite"></div>
 
@@ -475,15 +502,16 @@
         <div class="sec"><strong>Where it's weakest.</strong> Age 22 was never logged, so the model assumes the
           plateau ends at 21. Ages past 26 are extrapolated. Two 6-slot runs came in ~15% low (not statistically
           significant). Player-to-player variation of about &plusmn;10% is real and unexplained. Drill levels were
-          measured on one player, and the level setting applies to every drill in the plan. The rate was fitted on
+          measured on one player; the +10% steps are the game's advertised values, which that test matched. The rate was fitted on
           six drills; the rest of the catalogue is an educated extension. Teamplay drills and Goalkeeper Training
           aren't included at all. Ranges shown are 10th&ndash;90th percentile, not guarantees.</div>
       </div>
     </details>
 
     <div class="sec" style="margin-top:20px">
-      <strong>Privacy.</strong> This page sets no cookies and stores nothing on your device. Fonts are served from
-      this site, not from Google. Anonymous visit counts are recorded so I can see whether the tool is being used;
+      <strong>Privacy.</strong> This page sets no cookies. The only thing it keeps on your device is the drill
+      levels you choose, saved in this browser so you don't have to set them again; they never leave it. Clearing
+      your browser's site data removes them. Fonts are served from this site, not from Google. Anonymous visit counts are recorded so I can see whether the tool is being used;
       no personal data, no tracking across sites, and your player data is never sent anywhere unless you choose to
       submit a log above.
     </div>
@@ -511,7 +539,7 @@ const CONFIG = {
 
   // Shown in the header and attached to every submitted log, so you always
   // know which version of the model produced a given result.
-  modelVersion   : "model v0.5 · 2026-09-27"
+  modelVersion   : "model v0.6 · 2026-09-27"
 };
 /* ===================================================================== */
 
@@ -594,6 +622,35 @@ const MAX_ROLES = 3;       // a player can hold at most 3 roles
 // Same-player test (Pagnoni, 2026-09-26/27): 1.114 / 1.229 / 1.305 measured against
 // the advertised 1.10 / 1.20 / 1.30; the advertised values are used.
 const DRILL_LEVELS = {'Amateur':1.00, 'Semi-Pro':1.10, 'Pro':1.20, 'World Class':1.30};
+
+// Each drill has its own level, as in the game. The user's choices are kept in
+// this browser's localStorage (the only thing the page stores) so they are set
+// once. Unset drills count as Amateur. Storage can be blocked (private mode), so
+// every access is guarded and the page works without it.
+const LEVEL_KEY = 'te-drill-levels-v1';
+let drillLevels = {};
+try{
+  const raw = JSON.parse(localStorage.getItem(LEVEL_KEY) || '{}');
+  for(const [k,v] of Object.entries(raw)){
+    if(DRILLS.some(d=>d.name===k) && DRILL_LEVELS[v]) drillLevels[k] = v;
+  }
+}catch(e){ drillLevels = {}; }
+function levelOf(name){ return drillLevels[name] || 'Amateur'; }
+function levelMultOf(name){ return DRILL_LEVELS[levelOf(name)]; }
+function setDrillLevel(name, lvl){
+  if(!DRILL_LEVELS[lvl]) return;
+  drillLevels[name] = lvl;
+  try{ localStorage.setItem(LEVEL_KEY, JSON.stringify(drillLevels)); }catch(e){}
+  syncLevelUI();
+}
+function upgradedCount(){ return DRILLS.filter(d=>levelOf(d.name)!=='Amateur').length; }
+function levelSelect(name, extraAttrs){
+  const cur = levelOf(name);
+  return '<select class="lvlsel'+(cur!=='Amateur'?' up':'')+'" data-drill="'+esc(name)+'" '+(extraAttrs||'')
+    + ' aria-label="Level of '+esc(name)+'">'
+    + Object.keys(DRILL_LEVELS).map(l=>'<option'+(l===cur?' selected':'')+'>'+l+'</option>').join('')
+    + '</select>';
+}
 const N_RUNS = 800, MAX_SESSIONS_PER_DRILL = 4000;
 
 // pool points per session = C * age_mult * condition_spent * (180 - drill_average)
@@ -774,9 +831,10 @@ function drillWeight(drill, highlighted){
   return drill.skills.reduce((a,s)=>a + (highlighted[s]?W_HIGHLIGHT:W_PLAIN), 0);
 }
 
-// Condition per attribute point is W / (C * age_mult * (180 - avg)). Intensity,
-// slots and age all cancel out of the comparison between drills, so the drill to
-// pick is the one covering the most targets per unit of drill weight.
+// Condition per attribute point is W / (C * age_mult * level_mult * (180 - avg)).
+// Intensity, slots and age cancel out of the comparison between drills; drill level
+// does not. So the drill to pick covers the most targets per unit of drill weight,
+// scaled up by its own level.
 function setCover(targetSkills, highlighted){
   let remaining = new Set(targetSkills);
   const combo = [];
@@ -787,7 +845,7 @@ function setCover(targetSkills, highlighted){
       if(used.has(d.name)) continue;
       const overlap = d.skills.filter(s=>remaining.has(s));
       if(overlap.length===0) continue;
-      const score = overlap.length / drillWeight(d, highlighted);
+      const score = overlap.length * levelMultOf(d.name) / drillWeight(d, highlighted);
       if(score>bestScore){ best=d; bestScore=score; bestOverlap=overlap; }
     }
     if(!best) break;
@@ -802,7 +860,7 @@ function setCover(targetSkills, highlighted){
 // session drains, NOT the points it buys: tested 2026-09-25 at -10% on Cobeño,
 // points followed the listed cost (1.06x his known C) not the drained one (1.19x).
 // -20% to -50% assume the same behaviour; untested.
-function simulateSequence(combo, initialState, targets, highlighted, slots, ageMult, drainMult, levelMult){
+function simulateSequence(combo, initialState, targets, highlighted, slots, ageMult, drainMult){
   const state = Object.assign({}, initialState);
   const perDrill = [];
   let totalSessions=0, totalCondition=0;
@@ -815,6 +873,7 @@ function simulateSequence(combo, initialState, targets, highlighted, slots, ageM
   for(const {drill, covers} of combo){
     const rot = buildRotation(drill, highlighted);
     const costPerSession = slots * drill.cost;
+    const levelMult = levelMultOf(drill.name);
     let ptr = 0, sessions = 0, condition = 0, acc = 0;
     while(sessions < MAX_SESSIONS_PER_DRILL){
       const stillNeeded = covers.some(s=> targets[s]!==undefined && state[s] < targets[s]);
@@ -838,7 +897,19 @@ function simulateSequence(combo, initialState, targets, highlighted, slots, ageM
   return {perDrill, totalSessions, totalCondition, finalState:state, trajectory, stalled};
 }
 
-document.getElementById('runBtn').addEventListener('click', ()=>{
+// The drill names of the plan on screen, so a level change can say whether the
+// plan itself changed.
+let lastPlan = null;
+document.getElementById('runBtn').addEventListener('click', ()=>runCalculation(null));
+// Changing a drill's level on the plan re-runs everything, drill choice included.
+document.getElementById('resultsArea').addEventListener('change', e=>{
+  const sel = e.target.closest('.lvlsel');
+  if(!sel) return;
+  setDrillLevel(sel.dataset.drill, sel.value);
+  runCalculation(lastPlan);
+});
+
+function runCalculation(prevPlan){
   const warnBox = document.getElementById('warnBox');
   warnBox.className='warn'; warnBox.textContent='';
 
@@ -851,8 +922,6 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   });
   const slots = Math.min(MAX_SLOTS, Math.max(1, parseInt(document.getElementById('slots').value) || MAX_SLOTS));
   const drainBoost = parseInt(document.getElementById('drainBoost').value) || 0;
-  const drillLevel = document.getElementById('drillLevel').value;
-  const levelMult = DRILL_LEVELS[drillLevel] || 1.0;
   const age = parseInt(document.getElementById('age').value) || 18;
   const ageMult = ageMultiplier(age);
 
@@ -899,7 +968,7 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   let finalSum={}; ALL_SKILLS.forEach(s=>finalSum[s]=0);
   let sampleTraj=null; const stalledSet = new Set();
   for(let r=0;r<N_RUNS;r++){
-    const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult, 1 - drainBoost/100, levelMult);
+    const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult, 1 - drainBoost/100);
     sessionsArr.push(res.totalSessions); conditionArr.push(res.totalCondition);
     res.perDrill.forEach((pd,i)=>{ perDrillAgg[i].sessions.push(pd.sessions); perDrillAgg[i].condition.push(pd.condition); });
     ALL_SKILLS.forEach(s=>finalSum[s]+=res.finalState[s]);
@@ -916,7 +985,14 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
   const sMed=quantile(sessionsArr,.5), sLo=quantile(sessionsArr,.1), sHi=quantile(sessionsArr,.9);
   const cMed=quantile(conditionArr,.5), cLo=quantile(conditionArr,.1), cHi=quantile(conditionArr,.9);
 
-  let html = '<div class="headline">'
+  const plan = combo.map(c=>c.drill.name);
+  let html = '';
+  if(prevPlan && prevPlan.join('|') !== plan.join('|')){
+    html += '<div class="plan-note" role="status">Plan changed for your drill levels: now <b>'
+      + esc(plan.join(' → ')) + '</b> (was ' + esc(prevPlan.join(' → ')) + ').</div>';
+  }
+  lastPlan = plan;
+  html += '<div class="headline">'
     + '<div class="stat gold"><div class="num">'+fmt(sMed)+'</div><div class="lbl">training sessions (typical)</div>'
     + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div></div>'
     + '<div class="stat rest"><div><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
@@ -931,11 +1007,14 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
     const sm=quantile(pd.sessions,.5), cm=quantile(pd.condition,.5);
     const def = combo.find(c=>c.drill.name===pd.name).drill;
     const rot = buildRotation(def, highlighted);
-    html += '<tr><td>'+esc(pd.name)+'<div class="rot">order: '+esc(rot.join(' → '))+'</div></td>'
+    html += '<tr><td>'+esc(pd.name)+'<div>'+levelSelect(pd.name)+'</div>'
+      + '<div class="rot">order: '+esc(rot.join(' → '))+'</div></td>'
       + '<td style="color:var(--dim);font-size:13px">'+esc(def.skills.join(', '))+'</td>'
       + '<td class="num">'+fmt(sm)+'</td><td class="num">'+fmt(cm)+'%</td></tr>';
   });
   html += '</tbody></table></div>';
+  html += '<p class="legend" style="margin-top:calc(-1 * var(--sp2))">Set each drill to its level in your club. '
+    + 'The plan re-checks which drills are fastest, since an upgraded drill can beat one that covers more of your skills.</p>';
 
   html += '<div id="chartBox" class="chart-box"></div>';
 
@@ -961,13 +1040,47 @@ document.getElementById('runBtn').addEventListener('click', ()=>{
     age: age,
     slots: slots,
     drain_boost: drainBoost,
-    drill_level: drillLevel,
+    drills_upgraded: upgradedCount(),
+    plan_levels: plan.map(levelOf).join('+'),
+    replan: prevPlan ? 1 : 0,
     drills: combo.length,
     targets: targetSkills.length,
     roles: orderedRoles().join('+') || (starsEditedByHand ? 'manual' : 'none'),
     sessions_band: sMed < 25 ? 'under25' : sMed < 100 ? '25-100' : sMed < 300 ? '100-300' : 'over300'
   });
+}
+
+// ---------- "My drill levels" panel ----------
+function renderLevelGrid(){
+  const cats = [...new Set(DRILLS.map(d=>d.cat))];
+  document.getElementById('lvlGrid').innerHTML = cats.map(cat=>
+    '<div class="lvlcat">'+esc(cat.toUpperCase())+'</div>'
+    + DRILLS.filter(d=>d.cat===cat).map(d=>
+        '<div class="lvlrow"><span>'+esc(d.name)+'</span>'+levelSelect(d.name)+'</div>').join('')
+  ).join('');
+}
+// Keep every level dropdown on the page (panel, plan, contribute) in step.
+function syncLevelUI(){
+  document.querySelectorAll('.lvlsel[data-drill]').forEach(s=>{
+    const lvl = levelOf(s.dataset.drill);
+    if(s.value !== lvl) s.value = lvl;
+    s.classList.toggle('up', lvl !== 'Amateur');
+  });
+  const n = upgradedCount();
+  document.getElementById('lvlCount').textContent = n ? '· '+n+' upgraded' : '· all Amateur';
+}
+document.getElementById('lvlGrid').addEventListener('change', e=>{
+  const sel = e.target.closest('.lvlsel');
+  if(sel) setDrillLevel(sel.dataset.drill, sel.value);
 });
+document.getElementById('lvlAllBtn').addEventListener('click', ()=>{
+  const lvl = document.getElementById('lvlAll').value;
+  DRILLS.forEach(d=>{ drillLevels[d.name] = lvl; });
+  try{ localStorage.setItem(LEVEL_KEY, JSON.stringify(drillLevels)); }catch(e){}
+  syncLevelUI();
+});
+renderLevelGrid();
+syncLevelUI();
 
 // A pile of Rest Pack tiles that grows with the count, stacked as a mound:
 // bottom layer b wide, each layer above one narrower. One tile per pack up to 6,
@@ -1088,8 +1201,14 @@ function syncContribStars(){
     b.setAttribute('aria-pressed', isHighlighted(b.dataset.skill) ? 'true' : 'false');
   });
 }
-cDrill.addEventListener('change', renderPairs);
+// Pre-fill the log's drill level from "My drill levels", but only for a drill the
+// user has actually set. An unset drill stays blank so they have to answer.
+function prefillContribLevel(){
+  document.getElementById('c_level').value = drillLevels[cDrill.value] || '';
+}
+cDrill.addEventListener('change', ()=>{ renderPairs(); prefillContribLevel(); });
 renderPairs();
+prefillContribLevel();
 
 // prefill age/slots from the calculator when the panel is first opened
 document.getElementById('contribPanel').addEventListener('toggle', function(){

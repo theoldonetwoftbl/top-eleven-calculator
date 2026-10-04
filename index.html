@@ -124,6 +124,14 @@
   .pos:disabled{opacity:.22;cursor:not-allowed;transform:none;}
   .roles-info{flex:1 1 240px;min-width:0;}
   .roles-info h2{font-size:16px;margin:0 0 6px;font-weight:700;}
+  .ovrnow{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:26px;font-weight:600;line-height:1.1;
+        padding-bottom:4px;font-variant-numeric:tabular-nums;}
+  .ovrlbl{font-size:13px;color:var(--dim);font-weight:400;}
+  .ovrsub{font-family:'Space Grotesk',system-ui,sans-serif;font-size:11px;color:var(--dim);font-weight:400;}
+  .ovrgain{margin-top:var(--sp3);padding-top:var(--sp2);border-top:1px solid var(--line);}
+  .ovrgain .big{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:22px;font-weight:600;
+        font-variant-numeric:tabular-nums;}
+  .ovrgain .up{color:var(--ok);}
   .roles-info p{font-size:13px;color:var(--dim);margin:0 0 var(--sp2);line-height:1.55;}
   .rolesum{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px;min-height:var(--tap);}
   .rolesum .chip{display:inline-block;padding:4px 8px;border-radius:4px;font-weight:700;font-size:14px;
@@ -325,9 +333,13 @@
     <div class="pitch" id="pitch" role="group" aria-label="Player roles"></div>
     <div class="roles-info">
       <h2>Player</h2>
-      <div class="field" style="margin-bottom:var(--sp3)">
-        <label for="age">Age</label>
-        <input type="number" id="age" value="18" min="15" max="40" inputmode="numeric">
+      <div style="display:flex;gap:var(--sp4);align-items:flex-end;margin-bottom:var(--sp3)">
+        <div class="field">
+          <label for="age">Age</label>
+          <input type="number" id="age" value="18" min="15" max="40" inputmode="numeric">
+        </div>
+        <div class="ovrnow"><span class="ovrlbl">OVR</span> <span id="ovrNow">–</span>
+          <div class="ovrsub">from the 15 skills below</div></div>
       </div>
       <div style="font-size:13px;color:var(--dim);margin-bottom:6px">Roles</div>
       <p>Tap every role the player has in-game (up to 3). The skills each role highlights (white in-game) are starred
@@ -344,7 +356,8 @@
 
   <p class="legend">
     Starred skills are <b>highlighted</b> for the player's roles and gain twice as fast. The roles above set the
-    stars for you; tap a star only if you need to override them.
+    stars for you; tap a star only if you need to override them. Enter each skill's own number, without any
+    purple <b>+N</b> mentor boost; those only apply in matches.
   </p>
 
   <div class="setup">
@@ -482,10 +495,16 @@
           <span class="mono">&times;0.785</span> per year (95% CI 0.705&ndash;0.863). Measured on identical runs at
           ages 18, 19, 21, 23 and 26; beats a no-age model by &Delta;AIC&nbsp;=&nbsp;28.6. Not a level effect in
           disguise &mdash; the 26-year-old had the lowest skills of any subject, where the model predicts it should
-          have been fastest.</div>
+          have been fastest. <strong>Age 22 is measured directly:</strong> the same player trained at 21 and
+          again at 22, and his rate fell to <span class="mono">&times;0.64</span> (95% CI 0.59&ndash;0.70), so 22 uses
+          that value. Ages 23 and up follow the fitted curve.</div>
         <div class="sec"><strong>Rotation.</strong> One pass over every skill the drill trains, then a second pass
           over the highlighted ones. Verified exactly: on Carioca with Ladders the rotation predicted 26.00 and 13.00
           points; the real log gave 26 and 13.</div>
+        <div class="sec"><strong>Overall (OVR).</strong> A player's OVR is simply the average of all 15 skills,
+          rounded. Roles don't change it. Checked against 17 in-game screenshots of 12 players in 9 positions: every
+          one matched. So the OVR after training is exact given the skill values; the uncertainty is only in how fast
+          the skills get there. Goalkeepers are not covered.</div>
         <div class="sec"><strong>Condition.</strong> slots &times; intensity (Very Easy 0.75% &middot; Easy 1.5% &middot;
           Medium 2.25% &middot; Hard 3% &middot; Very Hard 3.75%), flat in level and age. Rest Packs restore 15%.
           A Campus <em>condition drain boost</em> cuts the condition drained but not the points: at &minus;10% a
@@ -499,8 +518,9 @@
           <span class="mono">1.10 / 1.20 / 1.30</span>. Level speeds up gains only: every run drained exactly the
           listed condition, so upgraded drills are not cheaper per session. (An earlier test that found only +4% at
           Semi-Pro is overturned. Its "Amateur" comparison run was most likely on an upgraded drill.)</div>
-        <div class="sec"><strong>Where it's weakest.</strong> Age 22 was never logged, so the model assumes the
-          plateau ends at 21. Ages past 26 are extrapolated. Two 6-slot runs came in ~15% low (not statistically
+        <div class="sec"><strong>Where it's weakest.</strong> Age 22 rests on one player measured against himself;
+          23 and up come from players compared with each other. Ages past 26 are extrapolated. After a promotion every
+          skill drops about 20; training follows the new numbers, so just enter what the game shows. Two 6-slot runs came in ~15% low (not statistically
           significant). Player-to-player variation of about &plusmn;10% is real and unexplained. Drill levels were
           measured on one player; the +10% steps are the game's advertised values, which that test matched. The rate was fitted on
           six drills; the rest of the catalogue is an educated extension. Teamplay drills and Goalkeeper Training
@@ -539,7 +559,7 @@ const CONFIG = {
 
   // Shown in the header and attached to every submitted log, so you always
   // know which version of the model produced a given result.
-  modelVersion   : "model v0.6 · 2026-09-27"
+  modelVersion   : "model v0.8 · 2026-10-04"
 };
 /* ===================================================================== */
 
@@ -658,10 +678,16 @@ const N_RUNS = 800, MAX_SESSIONS_PER_DRILL = 4000;
 const C_UNIFIED = 0.002064;
 
 // Flat 18-21, then x0.785 per year (95% CI 0.705-0.863). dAIC = 28.6 vs no age term.
+// Age 22 is overridden by a direct measurement: one player against his own age-21 rate
+// (2026-10-04) gave x0.64 (95% CI 0.59-0.70). 23+ stays on the fitted curve (23 = 0.616), which
+// keeps the multiplier falling with age.
 const AGE_PLATEAU_END = 21;
 const AGE_DECAY = 0.785;
+const AGE_22_MEASURED = 0.64;
 function ageMultiplier(age){
-  return age <= AGE_PLATEAU_END ? 1.0 : Math.pow(AGE_DECAY, age - AGE_PLATEAU_END);
+  if(age <= AGE_PLATEAU_END) return 1.0;
+  if(age === 22) return AGE_22_MEASURED;
+  return Math.pow(AGE_DECAY, age - AGE_PLATEAU_END);
 }
 
 // Two layers of uncertainty: within a run the pool is a near-deterministic
@@ -803,6 +829,20 @@ renderRoleSummary();
 
 const ALL_SKILLS = SKILL_CATS.flatMap(c=>c.skills.map(s=>s.n));
 
+// OVR is the plain average of all 15 outfield skills, rounded. Checked on 17
+// screenshots across 12 players and 9 positions (2026-09-29): 17/17 exact. Roles
+// don't enter it. Goalkeepers are untested.
+function ovrOf(values){
+  return Math.round(ALL_SKILLS.reduce((a,s)=>a+(values[s]||0),0) / ALL_SKILLS.length);
+}
+function currentValues(){
+  const v = {}; ALL_SKILLS.forEach(s=>{ v[s] = parseFloat(document.getElementById('cur_'+s).value) || 0; });
+  return v;
+}
+function updateOvrNow(){ document.getElementById('ovrNow').textContent = ovrOf(currentValues()); }
+gridEl.addEventListener('input', e=>{ if(e.target.classList.contains('cur')) updateOvrNow(); });
+updateOvrNow();
+
 function gaussian(mean, sd){
   let u=0,v=0; while(u===0)u=Math.random(); while(v===0)v=Math.random();
   return mean + Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*sd;
@@ -942,7 +982,7 @@ function runCalculation(prevPlan){
     warnings.push('Age '+age+' is past the oldest player logged (26), so the decline is extrapolated. It may flatten out rather than keep compounding.');
   }
   if(age===22){
-    warnings.push('Age 22 is the one gap in the data: 18-21 measured flat, 23 and 26 measured slow, 22 never logged. The model assumes the drop starts at 22 — if the plateau really runs through 22, this is about 21% pessimistic.');
+    warnings.push('Age 22 is measured directly: one player trained at 64% of his own age-21 rate (range 59–70%). The flat 18–21 stretch ends at 21. It rests on one player, so expect some spread.');
   }
   const {combo, uncovered} = setCover(targetSkills, highlighted);
   if(uncovered.length){
@@ -976,6 +1016,7 @@ function runCalculation(prevPlan){
     if(r===Math.floor(N_RUNS/2)) sampleTraj = res.trajectory;
   }
   const finalAvg={}; ALL_SKILLS.forEach(s=>finalAvg[s]=finalSum[s]/N_RUNS);
+  const ovrBefore = ovrOf(current), ovrAfter = ovrOf(finalAvg);
 
   if(stalledSet.size){
     warnings.push('Out of reach: '+[...stalledSet].join(', ')+' hit the 180% ceiling before your target was met. Once a drill’s own average reaches 180 it stops producing gains.');
@@ -994,7 +1035,10 @@ function runCalculation(prevPlan){
   lastPlan = plan;
   html += '<div class="headline">'
     + '<div class="stat gold"><div class="num">'+fmt(sMed)+'</div><div class="lbl">training sessions (typical)</div>'
-    + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div></div>'
+    + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div>'
+    + '<div class="ovrgain"><div class="big">OVR '+ovrBefore+' → <span class="up">'+ovrAfter+'</span></div>'
+    + '<div class="lbl">'+(ovrAfter>ovrBefore ? '+'+(ovrAfter-ovrBefore)+' overall' : 'no change to overall')
+    + ' (OVR is the average of all 15 skills)</div></div></div>'
     + '<div class="stat rest"><div><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
     + '<div class="range">'+fmt(cLo)+'–'+fmt(cHi)+'% depending on luck</div></div>'
     + restPackPile(Math.ceil(cMed/REST_PACK_PCT))

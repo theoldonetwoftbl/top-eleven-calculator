@@ -67,7 +67,8 @@
         font-weight:700;font-size:14px;letter-spacing:.02em;}
   .cat-head .dot{width:9px;height:9px;border-radius:2px;flex:none;}
   .cat.def .dot{background:var(--def);} .cat.atk .dot{background:var(--atk);} .cat.phy .dot{background:var(--phy);}
-  .cat.def .cat-head{color:var(--def);} .cat.atk .cat-head{color:var(--atk);} .cat.phy .cat-head{color:var(--phy);}
+  .cat.def .cat-head{color:var(--def);} .cat.atk .cat-head{color:#ec6064;} .cat.phy .cat-head{color:var(--phy);}
+  /* Attack heading text is a shade lighter than --atk: 5.1:1 on the panel instead of 4.3 (WCAG AA 4.5). */
 
   /* Touch targets: star and both inputs are >=44px tall so they are reliably
      tappable on a phone. Inputs are 16px so iOS does not auto-zoom on focus. */
@@ -111,12 +112,14 @@
         position:relative;z-index:1;justify-self:center;min-width:66px;min-height:var(--tap);
         padding:0 10px;border-radius:5px;cursor:pointer;
         font-weight:700;font-size:18px;letter-spacing:-.01em;line-height:1;
-        background:#15321d;color:var(--f);border:2px solid var(--f);opacity:.62;
-        transition:opacity .15s ease,transform .1s ease;}
+        background:#15321d;color:var(--f);border:2px solid var(--f);
+        transition:background .15s ease,transform .1s ease;}
+  /* Unpicked badges stay at full opacity: dimmed, the red ST text fell to 2.5:1. Outline vs. filled
+     already tells picked from unpicked. */
   .chip{--f:#e8d26e;--b:#a68d45;--t:#3a3223;}
   .pos.def,.chip.def{--f:#74d46b;--b:#3f933f;--t:#173f17;}
   .pos.fwd,.chip.fwd{--f:#ee6f6a;--b:#a94646;--t:#4e1010;}
-  .pos:hover{opacity:.9;}
+  .pos:hover{background:#1d4428;}
   .pos[aria-pressed="true"]{opacity:1;color:var(--t);border-color:var(--b);
         background:linear-gradient(to bottom,color-mix(in srgb,var(--f) 80%,#fff) 0%,var(--f) 45%,var(--f) 100%);
         box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 0 rgba(0,0,0,.4);}
@@ -329,6 +332,7 @@
     <p>Enter the player's age and roles, set a target for the skills you want to raise, and this works out how many sessions and how much condition it takes. The numbers come from real logged training data, not guesswork &mdash; and it will tell you where it is unsure.</p>
   </header>
 
+  <main>
   <div class="roles">
     <div class="pitch" id="pitch" role="group" aria-label="Player roles"></div>
     <div class="roles-info">
@@ -348,6 +352,47 @@
       <div class="rolesum" id="roleSum" role="status" aria-live="polite"></div>
     </div>
   </div>
+
+  <details class="contrib levels" id="calPanel">
+    <summary>
+      <svg class="chev" width="16" height="16" aria-hidden="true"><use href="#ico-chev"/></svg>
+      This player's training speed <span class="lvlcount" id="calBadge">· average player (optional)</span>
+    </summary>
+    <div class="contrib-body">
+      <p>Players train at their own speed, typically within about 10% of average, and each player keeps
+        his speed. Enter one past run of <strong style="color:#b9c0c7">this</strong> player and the calculator
+        learns it. That makes the plan far more precise. Any drill works; 25+ sessions is best.</p>
+      <div class="cgrid">
+        <div class="cfield"><label for="cal_drill">Drill he trained</label><select id="cal_drill"></select></div>
+        <div class="cfield"><label for="cal_level">That drill's level then</label>
+          <select id="cal_level"><option>Amateur</option><option>Semi-Pro</option><option>Pro</option><option>World Class</option></select></div>
+        <div class="cfield"><label for="cal_slots">Drill slots</label>
+          <select id="cal_slots"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option selected>6</option></select></div>
+        <div class="cfield"><label for="cal_sessions">Sessions</label>
+          <input type="number" id="cal_sessions" min="1" max="50" inputmode="numeric" placeholder="e.g. 25"></div>
+        <div class="cfield"><label for="cal_age">His age during that run</label>
+          <input type="number" id="cal_age" min="15" max="40" inputmode="numeric" placeholder="e.g. 19">
+          <span class="hint">If he's had a birthday season since, enter the old age.</span></div>
+      </div>
+      <p style="margin-bottom:6px"><strong style="color:#b9c0c7">That drill's skills, before and after the run</strong>
+        (without mentor boosts). Only the total he gained matters, so the roles don't need to be set for this.</p>
+      <div class="pairhead"><span style="text-align:left">SKILL</span><span>BEFORE</span><span>AFTER</span></div>
+      <div class="skillpairs" id="calPairs"></div>
+      <div class="crow">
+        <button class="send" id="calBtn" type="button">Learn this player's speed</button>
+        <button class="ghost" id="calClear" type="button">Back to average</button>
+      </div>
+      <div class="cstatus" id="calStatus" role="status" aria-live="polite"></div>
+      <div id="calSendBox" hidden>
+        <p style="margin:var(--sp2) 0 6px">Want to help? This same run is exactly the data that improves the calculator.
+          Sending it is optional and anonymous: just these numbers and the player's roles, no name or club.</p>
+        <div class="crow" style="margin-top:0">
+          <button class="ghost" id="calSend" type="button">Also send this run to improve the calculator</button>
+        </div>
+        <div class="cstatus" id="calSendStatus" role="status" aria-live="polite"></div>
+      </div>
+    </div>
+  </details>
 
   <div class="col-labels">
     <span></span><span style="text-align:left">SKILL</span><span>NOW</span><span>TARGET</span>
@@ -450,7 +495,8 @@
         <div class="cfield">
           <label for="c_sessions">Sessions trained</label>
           <input type="number" id="c_sessions" min="1" max="2000" inputmode="numeric" placeholder="e.g. 25">
-          <span class="hint">Count of sessions between your before and after numbers.</span>
+          <span class="hint">Count of sessions between your before and after numbers. 25 is ideal; runs of only a few
+            sessions are too noisy to use.</span>
         </div>
       </div>
 
@@ -468,6 +514,7 @@
       <div class="cstatus" id="cStatus" role="status" aria-live="polite"></div>
     </div>
   </details>
+  </main>
 
   <footer>
     <div class="sec">
@@ -501,6 +548,12 @@
         <div class="sec"><strong>Rotation.</strong> One pass over every skill the drill trains, then a second pass
           over the highlighted ones. Verified exactly: on Carioca with Ladders the rotation predicted 26.00 and 13.00
           points; the real log gave 26 and 13.</div>
+        <div class="sec"><strong>Player speed.</strong> Each player has his own training speed and keeps it. Three
+          players trained in the same sessions from identical starting points gained 119, 110 and 109 points, and two
+          of them matched their earlier speed (other drills, before and after a promotion) to within about 1.5%. The
+          average player sits at <span class="mono">1.00&times;</span>; most players fall within about
+          &plusmn;10%. Calibrating with one logged run replaces that &plusmn;10% with the player's own number, usually
+          accurate to &plusmn;3&ndash;4%.</div>
         <div class="sec"><strong>Overall (OVR).</strong> A player's OVR is simply the average of all 15 skills,
           rounded. Roles don't change it. Checked against 17 in-game screenshots of 12 players in 9 positions: every
           one matched. So the OVR after training is exact given the skill values; the uncertainty is only in how fast
@@ -529,12 +582,48 @@
     </details>
 
     <div class="sec" style="margin-top:20px">
-      <strong>Privacy.</strong> This page sets no cookies. The only thing it keeps on your device is the drill
-      levels you choose, saved in this browser so you don't have to set them again; they never leave it. Clearing
-      your browser's site data removes them. Fonts are served from this site, not from Google. Anonymous visit counts are recorded so I can see whether the tool is being used;
-      no personal data, no tracking across sites, and your player data is never sent anywhere unless you choose to
-      submit a log above.
+      <strong>Privacy.</strong> This page sets no cookies and asks for no name, email or account. The only thing it
+      keeps on your device is the drill levels you choose, saved in this browser so you don't have to set them again;
+      they never leave it, and clearing your browser's site data removes them. Fonts are served from this site, not
+      from Google. Three outside services are involved, and only these:
+      <a href="https://umami.is/privacy" target="_blank" rel="noopener">Umami</a> counts visits and which features are
+      used, anonymously and without cookies, so I can see whether the tool is used (no tracking across sites, no
+      recording of what you type);
+      <a href="https://formspree.io/legal/privacy-policy/" target="_blank" rel="noopener">Formspree</a> receives a
+      training log only if you choose to send one (the "send a training log" panel, or "Also send this run" after
+      calibrating a player), and gets just the numbers in it plus the technical details any website sees, such as your
+      IP address; <a href="https://tally.so/help/privacy-policy" target="_blank" rel="noopener">Tally</a> hosts the
+      feedback form, which holds only what you write in it. Learning a player's speed on its own sends nothing.
+      Questions about your data, or a log you want removed: use the feedback form below.
     </div>
+    <div class="sec">
+      <strong>Unofficial.</strong> A free fan-made tool, not affiliated with or endorsed by Nordeus or Top Eleven.
+      Its numbers are estimates from logged gameplay, not guarantees. Fonts: Space Grotesk and JetBrains Mono,
+      <a href="fonts/OFL.txt">SIL Open Font License</a>.
+    </div>
+    <details id="a11yStatement">
+      <summary><svg width="14" height="14" aria-hidden="true"><use href="#ico-chev"/></svg> Accessibility statement</summary>
+      <div style="padding-top:12px">
+        <div class="sec">This calculator is meant to be usable by everyone, including people who use a keyboard
+          instead of a mouse, screen readers, or screen magnification. It aims to meet <strong>WCAG 2.1 level AA</strong>,
+          which includes the requirements of Israeli Standard <span class="mono">IS 5568</span> (WCAG 2.0 level AA).</div>
+        <div class="sec"><strong>What has been done.</strong> Every control is a real button, field or menu, so the whole
+          page works with Tab, Enter and Space, and shows a visible focus outline. Every field and button has a label a
+          screen reader announces, and short status messages (the role summary, warnings, and calibration and sending
+          messages) are read out when they change. Text and controls meet AA contrast on the dark background. The page
+          has headings and a main content landmark, works on phone screens down to 375px wide, and turns its
+          animations off if your device is set to reduce motion. The results chart is a picture of the progress over
+          the sessions; the plan itself (sessions, condition, Rest Packs, end values) is all written out as text.</div>
+        <div class="sec"><strong>Known limits.</strong> Skill names follow the game's own English terms, and the role
+          badges use the game's abbreviations (ST, AMC, DL and so on). The page is in English only.</div>
+        <div class="sec"><strong>How it was checked.</strong> An automated check (axe-core, WCAG 2.1 A and AA rules)
+          reporting no violations, plus a manual keyboard test, on 6 October 2026.</div>
+        <div class="sec"><strong>Found a barrier?</strong> If something on this page doesn't work for you, please
+          <span id="a11yContact"></span>, and say what you were trying to do. Accessibility contact: the site's
+          owner, who runs it alone and answers these first.</div>
+        <div class="sec">Last updated: 6 October 2026.</div>
+      </div>
+    </details>
     <div class="sec" id="feedbackLine"></div>
   </footer>
 </div>
@@ -557,9 +646,14 @@ const CONFIG = {
   // Link where people can leave feedback (a Tally or Google Form works).
   feedbackUrl    : "https://tally.so/r/9q8YMQ",
 
+  // Site contact email, shown in the accessibility statement (Israeli rules ask
+  // for a named contact). Use the site's own address, not a personal one.
+  // While empty, the statement points to the feedback form instead.
+  contactEmail   : "theoldonetwoftbl@gmail.com",
+
   // Shown in the header and attached to every submitted log, so you always
   // know which version of the model produced a given result.
-  modelVersion   : "model v0.8 · 2026-10-04"
+  modelVersion   : "model v0.8.3 · 2026-10-06"
 };
 /* ===================================================================== */
 
@@ -576,6 +670,15 @@ function track(name, data){
 }
 
 document.getElementById('verTag').textContent = CONFIG.modelVersion;
+(function(){
+  const el = document.getElementById('a11yContact');
+  const mail = CONFIG.contactEmail;
+  const form = CONFIG.feedbackUrl
+    ? '<a href="'+CONFIG.feedbackUrl+'" target="_blank" rel="noopener">the feedback form</a>' : '';
+  el.innerHTML = mail
+    ? 'email <a href="mailto:'+mail+'">'+mail+'</a>' + (form ? ' or use '+form : '')
+    : 'use ' + (form || 'the feedback link at the bottom of this page');
+})();
 (function(){
   const el = document.getElementById('feedbackLine');
   if(!CONFIG.feedbackUrl){ el.style.display='none'; return; }
@@ -832,8 +935,17 @@ const ALL_SKILLS = SKILL_CATS.flatMap(c=>c.skills.map(s=>s.n));
 // OVR is the plain average of all 15 outfield skills, rounded. Checked on 17
 // screenshots across 12 players and 9 positions (2026-09-29): 17/17 exact. Roles
 // don't enter it. Goalkeepers are untested.
-function ovrOf(values){
-  return Math.round(ALL_SKILLS.reduce((a,s)=>a+(values[s]||0),0) / ALL_SKILLS.length);
+function ovrMean(values){
+  return ALL_SKILLS.reduce((a,s)=>a+(values[s]||0),0) / ALL_SKILLS.length;
+}
+function ovrOf(values){ return Math.round(ovrMean(values)); }
+// A predicted OVR is an average over simulated runs, so when it lands near a .5 the
+// real game can round either way (Paz, 2026-10-05: predicted 63.55, actual 63.47).
+// Within OVR_EDGE of the line, show both whole numbers instead of guessing.
+const OVR_EDGE = 0.15;
+function ovrPrediction(values){
+  const m = ovrMean(values), lo = Math.floor(m);
+  return Math.abs(m - lo - 0.5) <= OVR_EDGE ? {lo, hi: lo + 1} : {lo: Math.round(m), hi: Math.round(m)};
 }
 function currentValues(){
   const v = {}; ALL_SKILLS.forEach(s=>{ v[s] = parseFloat(document.getElementById('cur_'+s).value) || 0; });
@@ -906,10 +1018,14 @@ function simulateSequence(combo, initialState, targets, highlighted, slots, ageM
   let totalSessions=0, totalCondition=0;
   const trajectory = [];
   const stalled = [];
+  const limited = [];
   let cursor = 0;
   // One draw per run: this player's own C, held fixed, because that is how the
-  // between-run difference actually behaves.
-  const cRun = C_UNIFIED * Math.max(0.35, 1 + gaussian(0, C_RUN_REL_SD));
+  // between-run difference actually behaves. A calibrated player replaces the
+  // population spread with his own measured value and its much smaller error.
+  const cMean = playerCal ? C_UNIFIED * playerCal.mult : C_UNIFIED;
+  const cSd = playerCal ? playerCal.sd : C_RUN_REL_SD;
+  const cRun = cMean * Math.max(0.35, 1 + gaussian(0, cSd));
   for(const {drill, covers} of combo){
     const rot = buildRotation(drill, highlighted);
     const costPerSession = slots * drill.cost;
@@ -931,10 +1047,12 @@ function simulateSequence(combo, initialState, targets, highlighted, slots, ageM
       sessions++; cursor++;
       if(cursor%3===0) trajectory.push({x:cursor, y:avg, drill:drill.name});
     }
+    // Ran out of sessions with the target still unmet: the run never got there.
+    if(sessions >= MAX_SESSIONS_PER_DRILL && covers.some(s=> targets[s]!==undefined && state[s] < targets[s])) limited.push(drill.name);
     perDrill.push({name:drill.name, sessions, condition});
     totalSessions+=sessions; totalCondition+=condition;
   }
-  return {perDrill, totalSessions, totalCondition, finalState:state, trajectory, stalled};
+  return {perDrill, totalSessions, totalCondition, finalState:state, trajectory, stalled, limited};
 }
 
 // The drill names of the plan on screen, so a level change can say whether the
@@ -1007,8 +1125,10 @@ function runCalculation(prevPlan){
   const perDrillAgg = combo.map(c=>({name:c.drill.name, sessions:[], condition:[]}));
   let finalSum={}; ALL_SKILLS.forEach(s=>finalSum[s]=0);
   let sampleTraj=null; const stalledSet = new Set();
+  let limitedRuns = 0; const limitedSet = new Set();
   for(let r=0;r<N_RUNS;r++){
     const res = simulateSequence(combo, current, targets, highlighted, slots, ageMult, 1 - drainBoost/100);
+    if(res.limited.length){ limitedRuns++; res.limited.forEach(d=>limitedSet.add(d)); }
     sessionsArr.push(res.totalSessions); conditionArr.push(res.totalCondition);
     res.perDrill.forEach((pd,i)=>{ perDrillAgg[i].sessions.push(pd.sessions); perDrillAgg[i].condition.push(pd.condition); });
     ALL_SKILLS.forEach(s=>finalSum[s]+=res.finalState[s]);
@@ -1016,7 +1136,12 @@ function runCalculation(prevPlan){
     if(r===Math.floor(N_RUNS/2)) sampleTraj = res.trajectory;
   }
   const finalAvg={}; ALL_SKILLS.forEach(s=>finalAvg[s]=finalSum[s]/N_RUNS);
-  const ovrBefore = ovrOf(current), ovrAfter = ovrOf(finalAvg);
+  const ovrBefore = ovrOf(current), ovrAfter = ovrPrediction(finalAvg);
+  const ovrAfterText = ovrAfter.lo === ovrAfter.hi ? String(ovrAfter.lo) : ovrAfter.lo+'–'+ovrAfter.hi;
+  const gainLo = ovrAfter.lo - ovrBefore, gainHi = ovrAfter.hi - ovrBefore;
+  const ovrGainText = gainHi <= 0 ? 'no change to overall'
+    : '+' + (gainLo === gainHi ? gainHi : Math.max(gainLo,0) + '–' + gainHi) + ' overall'
+      + (ovrAfter.lo !== ovrAfter.hi ? ', right on a rounding line' : '');
 
   if(stalledSet.size){
     warnings.push('Out of reach: '+[...stalledSet].join(', ')+' hit the 180% ceiling before your target was met. Once a drill’s own average reaches 180 it stops producing gains.');
@@ -1025,6 +1150,23 @@ function runCalculation(prevPlan){
 
   const sMed=quantile(sessionsArr,.5), sLo=quantile(sessionsArr,.1), sHi=quantile(sessionsArr,.9);
   const cMed=quantile(conditionArr,.5), cLo=quantile(conditionArr,.1), cHi=quantile(conditionArr,.9);
+
+  // The 4,000-session limit is a safety stop, not a prediction. If the typical run hits
+  // it, there is no meaningful session count to show; if only the slow tail does, the
+  // upper end of the range is "never" rather than ~4,000.
+  if(limitedRuns > N_RUNS/2){
+    lastPlan = combo.map(c=>c.drill.name);
+    document.getElementById('resultsArea').innerHTML =
+      '<div class="headline"><div class="stat gold" style="grid-column:1/-1">'
+      + '<div class="num">Not realistically reachable</div>'
+      + '<div class="lbl">This target takes more than ' + fmt(MAX_SESSIONS_PER_DRILL) + ' sessions on '
+      + esc([...limitedSet].join(', ')) + ' for this player. That is not a plan anyone can follow.</div>'
+      + '<div class="range">Usually the age: from 22 training slows down sharply. Try a lower target, a '
+      + 'younger player, or an upgraded drill.</div></div></div>';
+    track('calculate', {age: age, slots: slots, unreachable: 1, calibrated: playerCal ? 1 : 0});
+    return;
+  }
+  const tailNever = limitedRuns >= N_RUNS*0.1;
 
   const plan = combo.map(c=>c.drill.name);
   let html = '';
@@ -1035,10 +1177,10 @@ function runCalculation(prevPlan){
   lastPlan = plan;
   html += '<div class="headline">'
     + '<div class="stat gold"><div class="num">'+fmt(sMed)+'</div><div class="lbl">training sessions (typical)</div>'
-    + '<div class="range">'+fmt(sLo)+'–'+fmt(sHi)+' depending on luck</div>'
-    + '<div class="ovrgain"><div class="big">OVR '+ovrBefore+' → <span class="up">'+ovrAfter+'</span></div>'
-    + '<div class="lbl">'+(ovrAfter>ovrBefore ? '+'+(ovrAfter-ovrBefore)+' overall' : 'no change to overall')
-    + ' (OVR is the average of all 15 skills)</div></div></div>'
+    + '<div class="range">'+fmt(sLo)+'–'+(tailNever ? 'not reachable' : fmt(sHi))+' depending on luck</div>'
+    + (playerCal ? '<div class="range" style="color:var(--gold)">calibrated to this player ('+playerCal.mult.toFixed(2)+'×)</div>' : '')
+    + '<div class="ovrgain"><div class="big">OVR '+ovrBefore+' → <span class="up">'+ovrAfterText+'</span></div>'
+    + '<div class="lbl">'+ovrGainText+' (OVR is the average of all 15 skills)</div></div></div>'
     + '<div class="stat rest"><div><div class="num">'+fmt(cMed)+'%</div><div class="lbl">condition used in total</div>'
     + '<div class="range">'+fmt(cLo)+'–'+fmt(cHi)+'% depending on luck</div></div>'
     + restPackPile(Math.ceil(cMed/REST_PACK_PCT))
@@ -1087,6 +1229,7 @@ function runCalculation(prevPlan){
     drills_upgraded: upgradedCount(),
     plan_levels: plan.map(levelOf).join('+'),
     replan: prevPlan ? 1 : 0,
+    calibrated: playerCal ? 1 : 0,
     drills: combo.length,
     targets: targetSkills.length,
     roles: orderedRoles().join('+') || (starsEditedByHand ? 'manual' : 'none'),
@@ -1125,6 +1268,120 @@ document.getElementById('lvlAllBtn').addEventListener('click', ()=>{
 });
 renderLevelGrid();
 syncLevelUI();
+
+// ---------- per-player calibration ----------
+// C is a stable trait of each player (trio test 2026-10-05: three players in the same
+// sessions spanned 0.955-1.064x; two of them reproduced earlier values within ~1.5% on
+// other drills and across a promotion). One logged run pins it. We replay that run
+// with the same deterministic rotation the model uses and solve for the C that
+// reproduces the points gained. Its error is the within-run wander (0.29/sqrt(points))
+// plus ~1.5% run-to-run drift.
+let playerCal = null;
+const CAL_MIN_POINTS = 15, CAL_DRIFT = 0.015, CAL_MIN_MULT = 0.5, CAL_MAX_MULT = 2.0;
+const calDrill = document.getElementById('cal_drill');
+DRILLS.slice().sort((a,b)=>a.name.localeCompare(b.name)).forEach(d=>{
+  const o = document.createElement('option'); o.value = d.name; o.textContent = d.name + '  (' + d.intensity + ')';
+  calDrill.appendChild(o);
+});
+function renderCalPairs(){
+  const drill = DRILLS.find(d=>d.name===calDrill.value);
+  document.getElementById('calPairs').innerHTML = drill.skills.map(s=>
+    '<div class="pairrow"><span class="pname">'+esc(s)+'</span>'
+    +'<input type="number" inputmode="numeric" min="0" max="300" data-calb="'+esc(s)+'" aria-label="'+esc(s)+' before">'
+    +'<input type="number" inputmode="numeric" min="0" max="300" data-cala="'+esc(s)+'" aria-label="'+esc(s)+' after"></div>').join('');
+}
+calDrill.addEventListener('change', ()=>{ renderCalPairs(); calDrill.dataset.touched = '1'; });
+renderCalPairs();
+document.getElementById('cal_level').value = 'Amateur';
+
+function replayPoints(drill, before, sessions, slots, levelMult, ageMult, hl, C){
+  const rot = buildRotation(drill, hl), st = Object.assign({}, before);
+  let acc = 0, p = 0, gained = 0;
+  for(let i=0;i<sessions;i++){
+    const avg = drill.skills.reduce((a,s)=>a+st[s],0) / drill.skills.length;
+    if(avg >= CAP) break;
+    acc += C * ageMult * levelMult * slots * drill.cost * (CAP - avg);
+    const n = Math.floor(acc); acc -= n;
+    for(let j=0;j<n;j++){ st[rot[p % rot.length]] += 1; p++; gained++; }
+  }
+  return gained;
+}
+// Returns {mult, sd, points, ...} or {error}.
+function fitCalibration(){
+  const drill = DRILLS.find(d=>d.name===calDrill.value);
+  const level = document.getElementById('cal_level').value;
+  const slots = parseInt(document.getElementById('cal_slots').value);
+  const sessions = parseInt(document.getElementById('cal_sessions').value);
+  const age = parseInt(document.getElementById('cal_age').value);
+  if(!(sessions >= 1)) return {error:'enter how many sessions the run had'};
+  if(!(age >= 15 && age <= 40)) return {error:'enter his age during that run'};
+  const before = {}, after = {}, hl = {};
+  let points = 0;
+  for(const s of drill.skills){
+    const b = parseFloat(document.querySelector('[data-calb="'+CSS.escape(s)+'"]').value);
+    const a = parseFloat(document.querySelector('[data-cala="'+CSS.escape(s)+'"]').value);
+    if(isNaN(b) || isNaN(a)) return {error:'fill in before and after for '+s};
+    if(a < b) return {error:s+' went down, which training can’t do'};
+    before[s] = b; after[s] = a; points += a - b; hl[s] = isHighlighted(s);
+  }
+  if(points < CAL_MIN_POINTS) return {error:'only '+points+' points gained; a run needs at least '+CAL_MIN_POINTS+' to learn from, so use a longer run'};
+  const lm = DRILL_LEVELS[level], am = ageMultiplier(age);
+  const CHECK = 'check the sessions, slots, level and age';
+  // Every player measured so far is 0.95-1.08x; outside 0.5-2x is a typo, not a player.
+  if(replayPoints(drill, before, sessions, slots, lm, am, hl, C_UNIFIED*CAL_MAX_MULT) < points)
+    return {error:'that is more than even an extremely fast player gains in '+sessions+' sessions; '+CHECK};
+  if(replayPoints(drill, before, sessions, slots, lm, am, hl, C_UNIFIED*CAL_MIN_MULT) > points + 0.5)
+    return {error:'that is less than even an extremely slow player gains in '+sessions+' sessions; '+CHECK};
+  let lo = C_UNIFIED*CAL_MIN_MULT, hi = C_UNIFIED*CAL_MAX_MULT;
+  for(let i=0;i<60;i++){
+    const mid = (lo+hi)/2;
+    if(replayPoints(drill, before, sessions, slots, lm, am, hl, mid) < points - 0.5) lo = mid; else hi = mid;
+  }
+  const mult = ((lo+hi)/2) / C_UNIFIED;
+  const sd = Math.hypot(WITHIN_RUN_WANDER/Math.sqrt(points), CAL_DRIFT);
+  // Snapshot of the exact run learned from, so "also send" sends what was calibrated
+  // even if the form is edited afterwards.
+  const run = {drill: drill.name, level, slots, sessions, age, before, after};
+  return {mult, sd, points, drill: drill.name, sessions, run};
+}
+function showCal(){
+  const badge = document.getElementById('calBadge');
+  badge.textContent = playerCal ? '· '+playerCal.mult.toFixed(2)+'× average (±'+Math.round(playerCal.sd*100)+'%)'
+                                : '· average player (optional)';
+}
+document.getElementById('calBtn').addEventListener('click', ()=>{
+  const r = fitCalibration();
+  if(r.error){
+    setCalStatus('Can’t calibrate yet: '+r.error+'.'
+      + (playerCal ? ' Still using the previous calibration ('+playerCal.mult.toFixed(2)+'×).' : ''), 'bad');
+    return;
+  }
+  playerCal = r;
+  const pct = Math.round((r.mult-1)*100);
+  setCalStatus('This player trains at '+r.mult.toFixed(2)+'× the average player ('
+    + (pct===0 ? 'right on average' : (pct>0?'+':'')+pct+'%') + '), accurate to about ±'+Math.round(r.sd*100)
+    + '%, learned from '+r.points+' points over '+r.sessions+' sessions. Calculations now use it.'
+    + (r.mult < 0.8 || r.mult > 1.25 ? ' That is well outside the usual range; double-check the run’s level, slots and age.' : ''), 'ok');
+  showCal();
+  // Offer to send this (new) run; reset the button in case an earlier run was sent.
+  const send = document.getElementById('calSend');
+  send.disabled = !CONFIG.submitEndpoint; send.textContent = 'Also send this run to improve the calculator';
+  setCalSendStatus(CONFIG.submitEndpoint ? '' : 'Sending isn’t switched on for this site.', '');
+  document.getElementById('calSendBox').hidden = false;
+  track('calibrate', {mult_band: r.mult < 0.95 ? 'slow' : r.mult > 1.05 ? 'fast' : 'average', points: r.points});
+});
+document.getElementById('calClear').addEventListener('click', ()=>{
+  playerCal = null; setCalStatus('Back to the average player.', ''); showCal();
+  document.getElementById('calSendBox').hidden = true;
+});
+function setCalStatus(msg, kind){
+  const el = document.getElementById('calStatus'); el.textContent = msg; el.className = 'cstatus' + (kind ? ' '+kind : '');
+}
+// Pre-fill the run's age with the current age the first time the panel opens.
+document.getElementById('calPanel').addEventListener('toggle', function(){
+  const a = document.getElementById('cal_age');
+  if(this.open && !a.value) a.value = document.getElementById('age').value;
+});
 
 // A pile of Rest Pack tiles that grows with the count, stacked as a mound:
 // bottom layer b wide, each layer above one narrower. One tile per pack up to 6,
@@ -1306,6 +1563,31 @@ function setStatus(msg, kind){
   el.className = 'cstatus' + (kind ? ' '+kind : '');
 }
 
+// Shared by the contribute panel and the calibration panel. Returns true on success.
+async function postLog(payload){
+  if(!CONFIG.submitEndpoint) return false;
+  try{
+    const r = await fetch(CONFIG.submitEndpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    return r.ok;
+  }catch(err){ return false; }
+}
+
+// Short runs are mostly noise: 4 of 5 public logs (2026-09-30..10-03) gained 5-9 points
+// over 3-6 sessions. Warn once; a second tap sends anyway. Any edit re-arms the warning.
+let shortRunConfirmed = false;
+function resetShortRunWarning(){
+  if(!shortRunConfirmed) return;
+  shortRunConfirmed = false;
+  const btn = document.getElementById('cSend');
+  if(btn.textContent === 'Send anyway') btn.textContent = 'Send my log';
+}
+document.querySelector('#contribPanel .contrib-body').addEventListener('input', resetShortRunWarning);
+cDrill.addEventListener('change', resetShortRunWarning);
+
 document.getElementById('cSend').addEventListener('click', async ()=>{
   const {problems, payload} = collectContribution();
   if(problems.length){
@@ -1317,22 +1599,61 @@ document.getElementById('cSend').addEventListener('click', async ()=>{
     return;
   }
   const btn = document.getElementById('cSend');
+  const points = Object.values(payload.skills).reduce((a,s)=>a + s.after - s.before, 0);
+  if(points < CAL_MIN_POINTS && !shortRunConfirmed){
+    shortRunConfirmed = true;
+    btn.textContent = 'Send anyway';
+    setStatus('This run gained only ' + points + ' point' + (points===1?'':'s') + ' in ' + payload.sessions
+      + ' session' + (payload.sessions===1?'':'s') + ', which is too little to measure anything; luck swamps it. A run needs '
+      + CAL_MIN_POINTS + '+ points (about 25 sessions is ideal). Best: keep training and send it then. Or tap "Send anyway".', 'bad');
+    return;
+  }
   btn.disabled = true; setStatus('Sending…');
-  try{
-    const r = await fetch(CONFIG.submitEndpoint, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    if(!r.ok) throw new Error('status '+r.status);
+  if(await postLog(payload)){
     setStatus('Sent — thank you. This genuinely improves the model.', 'ok');
-    track('contribute_sent', {age: payload.age, drill: payload.drill, sessions: payload.sessions});
+    track('contribute_sent', {age: payload.age, drill: payload.drill, sessions: payload.sessions, short: shortRunConfirmed ? 1 : 0});
     btn.textContent = 'Sent';
-  }catch(err){
+  }else{
     setStatus('That didn’t go through. Tap "Copy instead" and send it to me directly.', 'bad');
     btn.disabled = false;
   }
 });
+
+// ---- send the calibration run as a log (opt-in, after a successful calibration) ----
+document.getElementById('calSend').addEventListener('click', async ()=>{
+  const btn = document.getElementById('calSend');
+  if(!playerCal) return;
+  const run = playerCal.run;
+  const drill = DRILLS.find(d=>d.name===run.drill);
+  // A log is only useful with the right highlights, and those come from the roles.
+  const anyStar = document.querySelector('#skillGrid .star[aria-pressed="true"]');
+  if(!anyStar){
+    setCalSendStatus('Pick the player’s roles above first, so the log records which skills were highlighted.', 'bad');
+    return;
+  }
+  const skills = {};
+  drill.skills.forEach(s=>{ skills[s] = {before: run.before[s], after: run.after[s], highlighted: isHighlighted(s)}; });
+  const payload = {
+    submitted: new Date().toISOString(), modelVersion: CONFIG.modelVersion, source: 'calibration',
+    age: run.age, slots: run.slots, sessions: run.sessions,
+    drill: drill.name, intensity: drill.intensity, drillLevel: run.level,
+    roles: orderedRoles().join('+') || 'manual stars',
+    fittedMultiplier: +playerCal.mult.toFixed(3),
+    skills
+  };
+  btn.disabled = true; setCalSendStatus('Sending…', '');
+  if(await postLog(payload)){
+    setCalSendStatus('Sent, thank you. Your run now helps the calculator for everyone.', 'ok');
+    btn.textContent = 'Sent';
+    track('contribute_sent', {age: run.age, drill: drill.name, sessions: run.sessions, source: 'calibration'});
+  }else{
+    setCalSendStatus('That didn’t go through. You can send it from “Help make this more accurate” below instead.', 'bad');
+    btn.disabled = false;
+  }
+});
+function setCalSendStatus(msg, kind){
+  const el = document.getElementById('calSendStatus'); el.textContent = msg; el.className = 'cstatus' + (kind ? ' '+kind : '');
+}
 
 document.getElementById('cCopy').addEventListener('click', async ()=>{
   const {problems, payload} = collectContribution();
